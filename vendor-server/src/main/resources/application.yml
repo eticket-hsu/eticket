@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: vendor-server
+  profiles:
+    default: star
+  datasource:
+    # 인스턴스마다 별도 인메모리 DB (재시작하면 시드 데이터로 초기화)
+    url: jdbc:h2:mem:${vendor.id};DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  h2:
+    console:
+      enabled: true
+
+vendor:
+  fairticket-url: http://localhost:8080
