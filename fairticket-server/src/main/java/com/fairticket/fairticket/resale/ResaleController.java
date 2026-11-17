@@ -76,7 +76,13 @@ public class ResaleController {
 		return resaleService.enter(id, req.buyerUid(), req.captchaId(), req.captchaAnswer());
 	}
 
-	/** 응모 마감 후 추첨 (MVP: 관리자 웹에서 버튼으로 실행) */
+	/** 선착순 구간에서 바로 구매 (결제 → 재발급 → 정산까지). 위험 등급 MEDIUM 이면 보안문자 필요 */
+	@PostMapping("/resales/{id}/buy-now")
+	public ResaleListing buyNow(@PathVariable Long id, @Valid @RequestBody EntryRequest req) {
+		return resaleService.buyNow(id, req.buyerUid(), req.captchaId(), req.captchaAnswer());
+	}
+
+	/** 추첨 마감 (자동 처리와 같음. 시연에서는 관리자 버튼으로 바로 실행). 응모자가 없으면 선착순으로 전환 */
 	@PostMapping("/resales/{id}/draw")
 	public ResaleListing draw(@PathVariable Long id) {
 		return resaleService.draw(id);

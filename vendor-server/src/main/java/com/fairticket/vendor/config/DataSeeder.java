@@ -35,6 +35,8 @@ public class DataSeeder implements CommandLineRunner {
 		members.save(new Member("민지", "ft-u-001"));
 		members.save(new Member("지수", "ft-u-002"));
 		members.save(new Member("서연", "ft-u-003"));
+		members.save(new Member("하늘", "ft-u-004"));
+		members.save(new Member("도윤", "ft-u-005"));
 		members.save(new Member("매크로봇", "ft-u-bot"));
 
 		LocalDate base = LocalDate.now();
@@ -53,6 +55,9 @@ public class DataSeeder implements CommandLineRunner {
 		else {
 			performances.save(new Performance("PERF-004", "스탠드업 코미디 〈오늘도 웃음〉", "코미디 크루 낙산", "코미디",
 					"별빛 소극장", LocalDateTime.of(base.plusDays(9), LocalTime.of(19, 30)), 44000, false, 2, 10));
+			// 12시간 뒤 시작하는 공연: 재판매가 추첨 구간(공연 24시간 전까지)을 지나 바로 선착순으로 열린다 (선정 방식 시연용)
+			performances.save(new Performance("PERF-005", "어쿠스틱 나이트 〈오늘 밤〉", "한성 어쿠스틱", "콘서트", "별빛 소극장",
+					LocalDateTime.now().plusHours(12).withMinute(0).withSecond(0).withNano(0), 66000, true, 2, 10));
 		}
 	}
 }

@@ -243,7 +243,10 @@ function ResaleDetail({ id }) {
     <div className="card">
       <div className="panel-h">
         <h2>재판매 #{l.id}</h2>
-        <Badge map={RESALE_STATUS} value={l.status} />
+        <span className="row" style={{ gap: 6 }}>
+          {l.status === 'LISTED' && <span className={`badge ${l.selectionPhase === 'FIRST_COME' ? 'warn' : 'info'}`}>{l.selectionPhase === 'FIRST_COME' ? '선착순' : '추첨'}</span>}
+          <Badge map={RESALE_STATUS} value={l.status} />
+        </span>
       </div>
       <div style={{ padding: 18, display: 'grid', gap: 18 }}>
         <div>
@@ -252,14 +255,14 @@ function ResaleDetail({ id }) {
             {vname(l.vendorId)} · {l.seat} · {won(l.price)} · 수수료 {l.fee > 0 ? won(l.fee) : '없음'}
           </div>
           <div className="tiny muted" style={{ marginTop: 4 }}>
-            판매 종료 {l.saleCloseAt?.replace('T', ' ').slice(0, 16)} · 결제 기한 {l.paymentMinutes}분
+            {l.lotteryCloseAt ? `추첨 마감 ${l.lotteryCloseAt.replace('T', ' ').slice(0, 16)} · ` : ''}판매 종료 {l.saleCloseAt?.replace('T', ' ').slice(0, 16)} · 결제 기한 {l.paymentMinutes}분
             {l.paymentDeadline && l.status === 'DRAWN' ? ` (마감 ${timeLabel(l.paymentDeadline)})` : ''}
           </div>
         </div>
         <ResaleStepper status={l.status} />
         <div className="row wrap">
-          <button className="btn sm dark" disabled={l.status !== 'LISTED'} onClick={() => act(() => api.post('ft', `/v1/resales/${l.id}/draw`), '추첨을 실행했습니다')}>
-            추첨 실행
+          <button className="btn sm dark" disabled={l.status !== 'LISTED' || l.selectionPhase === 'FIRST_COME'} title="응모자가 없으면 선착순으로 넘어갑니다" onClick={() => act(() => api.post('ft', `/v1/resales/${l.id}/draw`), '추첨 마감을 처리했습니다')}>
+            추첨 마감 (실행)
           </button>
           <button className="btn sm" disabled={l.status !== 'DRAWN'} onClick={() => act(() => api.post('ft', `/v1/resales/${l.id}/forfeit`), '차순위로 넘겼습니다')}>
             결제 기한 초과 처리

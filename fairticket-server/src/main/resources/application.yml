@@ -37,6 +37,9 @@ fairticket:
   demo-mode: true
   # 발행처가 공연 등록 때 재판매 기한을 보내지 않으면 쓰는 기본값 (팀 확인 대상)
   resale-defaults:
-    apply-hours-before: 24
+    # 구매자 선정 방식: HYBRID = 공연 lottery-hours-before 시간 전까지 추첨, 그 뒤 선착순 / LOTTERY = 끝까지 추첨
+    selection: HYBRID
+    lottery-hours-before: 24
+    apply-hours-before: 6
     close-hours-before: 3
     payment-minutes: 30

@@ -10,7 +10,8 @@ import org.springframework.stereotype.Component;
 /**
  * 기한 자동 처리.
  * - 당첨자 결제 기한이 지나면 차순위로 넘긴다
- * - 판매 종료 시각이 지나면 응모자가 있으면 추첨, 없으면 만료하고 원 구매자 권한을 복원한다
+ * - 추첨 마감 시각(HYBRID)이 지나면 추첨한다. 응모자가 없으면 선착순으로 넘어간다
+ * - 판매 종료 시각이 지나면 안 팔린 표를 만료하고 원 구매자 권한을 복원한다 (LOTTERY 방식은 이때 추첨)
  * 시연 중에는 관리자 콘솔의 버튼으로 같은 일을 바로 할 수 있다.
  */
 @Component
@@ -32,8 +33,12 @@ public class ResaleScheduler {
 		for (ResaleListing l : listings.findByStatusAndPaymentDeadlineBefore(ResaleStatus.DRAWN, now)) {
 			safely("결제 기한 초과", l.getId(), () -> resaleService.forfeit(l.getId()));
 		}
+		for (ResaleListing l : listings.findByStatusAndLotteryDoneFalseAndLotteryCloseAtBefore(ResaleStatus.LISTED,
+				now)) {
+			safely("추첨 마감", l.getId(), () -> resaleService.draw(l.getId()));
+		}
 		for (ResaleListing l : listings.findByStatusAndSaleCloseAtBefore(ResaleStatus.LISTED, now)) {
-			safely("판매 종료", l.getId(), () -> resaleService.draw(l.getId()));
+			safely("판매 종료", l.getId(), () -> resaleService.closeSale(l.getId()));
 		}
 	}
 

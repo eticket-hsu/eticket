@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Info, PartyPopper, Repeat, Check, CreditCard, Users } from 'lucide-react'
+import { Info, PartyPopper, Repeat, Check, CreditCard, Users, Zap, Dices } from 'lucide-react'
 import { api } from '../api.js'
 import { Badge, Modal, Poster, RESALE_STATUS, dateLabel, usePolling, useToast, won } from '../components/ui.jsx'
 import Captcha from '../components/Captcha.jsx'
@@ -12,7 +12,8 @@ export default function ResaleMarket() {
   const [listings, setListings] = useState([])
   const [details, setDetails] = useState({})
   const [payOf, setPayOf] = useState(null)
-  const [captchaFor, setCaptchaFor] = useState(null) // { listing, wrong }
+  const [captchaFor, setCaptchaFor] = useState(null) // { listing, wrong, mode: 'enter' | 'buy' }
+  const [buyOf, setBuyOf] = useState(null)
   const toast = useToast()
 
   const load = async () => {
@@ -36,9 +37,14 @@ export default function ResaleMarket() {
       toast('응모했습니다. 추첨 결과를 기다려 주세요', 'good')
       load()
     } catch (e) {
-      if (e.data?.captchaRequired) setCaptchaFor({ listing: l, wrong: e.data.wrong })
+      if (e.data?.captchaRequired) setCaptchaFor({ listing: l, wrong: e.data.wrong, mode: 'enter' })
       else toast(e.message, 'bad')
     }
+  }
+
+  function buy(l) {
+    if (!me) return openLogin()
+    setBuyOf({ listing: l })
   }
 
   const open = listings.filter((l) => l.status === 'LISTED' || l.status === 'DRAWN')
@@ -51,16 +57,22 @@ export default function ResaleMarket() {
       </h2>
       <div className="notice-bar">
         <Info size={18} />
-        <div>
-          관람이 어려워진 구매자가 {vendor.name}의 승인을 받아 올린 티켓입니다. <b>정가 이하</b>(판매자가 산 가격을 넘지 않음)로만 판매되고, 수수료는 없으며, 구매자는{' '}
-          <b>FairTicket 추첨</b>으로 정해집니다. 결제가 끝나면 기존 티켓은 무효가 되고 당첨자에게 새 티켓이 발급됩니다.
+        <div className="lines">
+          <span>관람이 어려워진 구매자가 {vendor.name}의 승인을 받아 올린 티켓입니다.</span>
+          <span>
+            <b>정가 이하</b>(판매자가 산 가격을 넘지 않음)로만 판매되고, 수수료는 없습니다.
+          </span>
+          <span>
+            구매자는 <b>공연 24시간 전까지는 추첨</b>, 그 뒤로는 <b>먼저 결제한 사람</b>으로 정해집니다.
+          </span>
+          <span>결제가 끝나면 기존 티켓은 무효가 되고 새 티켓이 발급됩니다.</span>
         </div>
       </div>
 
       {open.length === 0 && <div className="card empty">지금 판매 중인 재판매 티켓이 없습니다.</div>}
       <div className="resale-grid">
         {open.map((l) => (
-          <ListingCard key={l.id} l={l} d={details[l.id]} me={me} onEnter={() => enter(l)} onPay={() => setPayOf(l)} />
+          <ListingCard key={l.id} l={l} d={details[l.id]} me={me} onEnter={() => enter(l)} onBuy={() => buy(l)} onPay={() => setPayOf(l)} />
         ))}
       </div>
 
@@ -78,18 +90,39 @@ export default function ResaleMarket() {
       )}
 
       {payOf && <PayModal listing={payOf} onClose={() => setPayOf(null)} onDone={load} />}
+      {buyOf && (
+        <PayModal
+          listing={buyOf.listing}
+          firstCome
+          captcha={buyOf.captcha}
+          onCaptcha={(wrong) => {
+            setBuyOf(null)
+            setCaptchaFor({ listing: buyOf.listing, wrong, mode: 'buy' })
+          }}
+          onClose={() => setBuyOf(null)}
+          onDone={load}
+        />
+      )}
       {captchaFor && (
         <EntryCaptcha
           wrong={captchaFor.wrong}
+          buy={captchaFor.mode === 'buy'}
           onClose={() => setCaptchaFor(null)}
-          onSubmit={(c) => enter(captchaFor.listing, { captchaId: c.id, captchaAnswer: c.answer })}
+          onSubmit={(c) => {
+            const cap = { captchaId: c.id, captchaAnswer: c.answer }
+            if (captchaFor.mode === 'buy') {
+              setBuyOf({ listing: captchaFor.listing, captcha: cap })
+              setCaptchaFor(null)
+            } else enter(captchaFor.listing, cap)
+          }}
         />
       )}
     </>
   )
 }
 
-function ListingCard({ l, d, me, onEnter, onPay }) {
+function ListingCard({ l, d, me, onEnter, onBuy, onPay }) {
+  const firstCome = l.selectionPhase === 'FIRST_COME'
   const entries = d?.entries ?? []
   const mine = me && l.sellerUid === me.ftUid
   const myEntry = me && entries.find((e) => e.buyerUid === me.ftUid)
@@ -104,7 +137,14 @@ function ListingCard({ l, d, me, onEnter, onPay }) {
         <div className="grow">
           <div className="spread">
             <span className="tiny muted">재판매 #{l.id}</span>
-            <Badge map={RESALE_STATUS} value={l.status} />
+            <span className="row" style={{ gap: 6 }}>
+              {l.status === 'LISTED' && (
+                <span className={`badge ${firstCome ? 'warn' : 'info'}`}>
+                  {firstCome ? <Zap size={12} /> : <Dices size={12} />} {firstCome ? '선착순' : '추첨'}
+                </span>
+              )}
+              <Badge map={RESALE_STATUS} value={l.status} />
+            </span>
           </div>
           <b style={{ display: 'block', marginTop: 4 }}>{l.performanceTitle}</b>
           <div className="small muted">
@@ -117,15 +157,23 @@ function ListingCard({ l, d, me, onEnter, onPay }) {
           <b>{won(l.price)}</b>
           <span className="small muted">{l.fee > 0 ? `+ 수수료 ${won(l.fee)}` : '수수료 없음'}</span>
         </div>
-        <span className="small muted row" style={{ gap: 4 }}>
-          <Users size={14} /> 응모 {entries.length}명
-        </span>
+        {firstCome && l.status === 'LISTED' ? (
+          <span className="small muted">공연 임박 · 먼저 결제한 사람에게</span>
+        ) : (
+          <span className="small muted row" style={{ gap: 4 }}>
+            <Users size={14} /> 응모 {entries.length}명
+          </span>
+        )}
       </div>
       {l.status === 'LISTED' &&
         (mine ? (
           <div className="badge" style={{ justifyContent: 'center', height: 40, borderRadius: 10 }}>
-            내가 올린 티켓 · 응모 접수 중
+            내가 올린 티켓 · {firstCome ? '선착순 판매 중' : '응모 접수 중'}
           </div>
+        ) : firstCome ? (
+          <button className="btn primary block" onClick={onBuy}>
+            <Zap size={16} /> 바로 구매
+          </button>
         ) : myEntry ? (
           <button className="btn block" disabled>
             <Check size={16} /> 응모 완료 · 추첨 대기
@@ -146,7 +194,7 @@ function ListingCard({ l, d, me, onEnter, onPay }) {
   )
 }
 
-function PayModal({ listing, onClose, onDone }) {
+function PayModal({ listing, onClose, onDone, firstCome, captcha, onCaptcha }) {
   const { vendor, me } = useVendor()
   const [state, setState] = useState('ready') // ready | busy | done | failed
   const [result, setResult] = useState(null)
@@ -155,21 +203,24 @@ function PayModal({ listing, onClose, onDone }) {
   async function pay() {
     setState('busy')
     try {
+      const path = firstCome ? 'buy-now' : 'pay'
       const [res] = await Promise.all([
-        api.post('ft', `/v1/resales/${listing.id}/pay`, { buyerUid: me.ftUid }),
+        api.post('ft', `/v1/resales/${listing.id}/${path}`, { buyerUid: me.ftUid, ...captcha }),
         new Promise((r) => setTimeout(r, 1200)),
       ])
       setResult(res)
       setState(res.status === 'SETTLED' ? 'done' : 'failed')
       onDone()
     } catch (e) {
+      if (e.data?.captchaRequired && onCaptcha) return onCaptcha(e.data.wrong)
       toast(e.message, 'bad')
       setState('ready')
+      if (firstCome) onDone()
     }
   }
 
   return (
-    <Modal title={state === 'ready' ? '재판매 티켓 결제' : null} onClose={state === 'busy' ? undefined : onClose}>
+    <Modal title={state === 'ready' ? (firstCome ? '재판매 티켓 바로 구매' : '재판매 티켓 결제') : null} onClose={state === 'busy' ? undefined : onClose}>
       {state === 'ready' && (
         <>
           <div className="policy" style={{ marginBottom: 18 }}>
@@ -182,8 +233,8 @@ function PayModal({ listing, onClose, onDone }) {
               <b>{listing.fee > 0 ? won(listing.fee) : '없음'}</b>
             </div>
             <div className="spread" style={{ width: '100%' }}>
-              <span>결제 기한</span>
-              <b>당첨 후 {listing.paymentMinutes}분</b>
+              <span>{firstCome ? '구매 방식' : '결제 기한'}</span>
+              <b>{firstCome ? '선착순 · 먼저 결제한 사람' : `당첨 후 ${listing.paymentMinutes}분`}</b>
             </div>
             <div className="spread" style={{ width: '100%', fontSize: 16 }}>
               <b>결제 금액</b>
@@ -244,7 +295,7 @@ function PayModal({ listing, onClose, onDone }) {
   )
 }
 
-function EntryCaptcha({ wrong, onClose, onSubmit }) {
+function EntryCaptcha({ wrong, buy, onClose, onSubmit }) {
   const [c, setC] = useState({})
   const [key, setKey] = useState(0)
   useEffect(() => {
@@ -255,11 +306,11 @@ function EntryCaptcha({ wrong, onClose, onSubmit }) {
       <p className="small text-2" style={{ marginBottom: 14, lineHeight: 1.6 }}>
         {wrong
           ? '보안문자가 맞지 않습니다. 새 문제로 다시 입력해 주세요.'
-          : "최근 구매 활동이 '주의' 단계로 분석되어 응모 전에 보안문자를 확인합니다."}
+          : `최근 구매 활동이 '주의' 단계로 분석되어 ${buy ? '구매' : '응모'} 전에 보안문자를 확인합니다.`}
       </p>
       <Captcha onChange={setC} reloadKey={key} />
       <button className="btn primary lg block" style={{ marginTop: 16 }} disabled={(c.answer ?? '').length !== 5} onClick={() => onSubmit(c)}>
-        확인하고 응모하기
+        {buy ? '확인하고 구매하기' : '확인하고 응모하기'}
       </button>
     </Modal>
   )

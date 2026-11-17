@@ -34,6 +34,8 @@ import com.fairticket.fairticket.vendor.VendorClient;
  * - 재발급 때 거래 가격을 새 소유자의 취득가로 넘겨 차익 거래를 막는다 (재재판매 허용)
  * - 이용자 수수료 없음
  * - 신청 마감·판매 종료·결제 기한은 발행처가 정하고, 안 보내면 기본값
+ * - 구매자 선정 (제안, 팀 확인 대상): HYBRID 면 공연 N시간 전까지 추첨, 그 뒤로는 선착순(바로 구매).
+ *   추첨에 응모자가 없거나 당첨자가 모두 결제하지 않아도 판매 종료 전이면 선착순으로 넘어간다
  * - 공통 구매 한도: 한도가 꽉 찬 사람은 응모 불가, 결제 때 다시 확인, 판매자는 재발급 완료 시 반환
  *
  * TODO(예외 처리 단계): 지금은 발행처 호출을 트랜잭션 안에서 동기로 한다.
@@ -80,7 +82,12 @@ public class ResaleService {
 	}
 
 	/** 발행처가 공연별로 정한 재판매 기한. null 이면 FairTicket 기본값을 쓴다. */
-	public record Deadlines(Integer applyHoursBefore, Integer closeHoursBefore, Integer paymentMinutes) {
+	public record Deadlines(Integer applyHoursBefore, Integer closeHoursBefore, Integer paymentMinutes,
+			Integer lotteryHoursBefore) {
+
+		public Deadlines(Integer applyHoursBefore, Integer closeHoursBefore, Integer paymentMinutes) {
+			this(applyHoursBefore, closeHoursBefore, paymentMinutes, null);
+		}
 	}
 
 	/** 1. 재판매 신청 → 2. 발행처 승인·기존 QR 잠금 */
@@ -96,6 +103,7 @@ public class ResaleService {
 		int applyHours = or(deadlines == null ? null : deadlines.applyHoursBefore(), d.applyHoursBefore());
 		int closeHours = or(deadlines == null ? null : deadlines.closeHoursBefore(), d.closeHoursBefore());
 		int payMinutes = or(deadlines == null ? null : deadlines.paymentMinutes(), d.paymentMinutes());
+		int lotteryHours = or(deadlines == null ? null : deadlines.lotteryHoursBefore(), d.lotteryHoursBefore());
 
 		LocalDateTime show = LocalDateTime.parse(startsAt);
 		if (!LocalDateTime.now().isBefore(show.minusHours(applyHours))) {
@@ -115,11 +123,19 @@ public class ResaleService {
 		ResaleListing l = listings.save(new ResaleListing(vendorId, vendorTicketId, performanceCode, sellerUid, price,
 				USER_FEE, show.minusHours(closeHours), payMinutes));
 		l.setDisplay(performanceTitle, seat, startsAt);
+		if (d.hybrid()) {
+			l.setLotteryCloseAt(show.minusHours(lotteryHours));
+			// 이미 추첨 구간이 지난 공연이면 처음부터 선착순
+			if (!LocalDateTime.now().isBefore(l.getLotteryCloseAt())) {
+				l.markLotteryDone();
+			}
+		}
 		history.save(new ResaleHistory(l.getId(), null, ResaleStatus.RESALE_PENDING,
 				"재판매 신청 (" + price + "원, 상한 " + cap + "원)"));
 		try {
 			vendors.lock(vendorId, vendorTicketId, key(l, "lock"));
-			move(l, ResaleStatus.LISTED, vendors.nameOf(vendorId) + " 승인, 기존 QR 사용 정지");
+			move(l, ResaleStatus.LISTED, vendors.nameOf(vendorId) + " 승인, 기존 QR 사용 정지"
+					+ (l.isLotteryDone() ? " · 공연이 가까워 선착순 판매" : ""));
 		}
 		catch (RestClientException e) {
 			move(l, ResaleStatus.CANCELLED, "발행처 거절: " + e.getMessage());
@@ -135,43 +151,90 @@ public class ResaleService {
 	public ResaleEntry enter(Long listingId, String buyerUid, String captchaId, String captchaAnswer) {
 		ResaleListing l = get(listingId);
 		require(l, ResaleStatus.LISTED);
-		if (l.getSellerUid().equals(buyerUid)) {
-			throw new IllegalStateException("판매자 본인은 응모할 수 없습니다");
+		if (l.isLotteryDone()) {
+			throw new IllegalStateException("추첨이 끝나 선착순으로 판매 중입니다. 바로 구매해 주세요");
 		}
 		if (entries.existsByListingIdAndBuyerUid(listingId, buyerUid)) {
 			throw new IllegalStateException("이미 응모했습니다");
 		}
+		RiskAssessment risk = checkBuyer(l, buyerUid, captchaId, captchaAnswer, "RESALE_ENTRY", "응모");
+		return entries.save(new ResaleEntry(listingId, buyerUid, risk.riskLevel()));
+	}
+
+	/**
+	 * 선착순 바로 구매 (추첨 구간이 끝난 뒤). 응모와 같은 조건(판매자·한도·위험 등급)을 확인하고,
+	 * 행을 잠가 먼저 온 한 명만 당첨자로 정한 뒤 곧바로 결제 → 재발급 → 정산까지 진행한다.
+	 * 결제 단계에서 실패하면 전체가 되돌아가 다시 판매 중이 된다.
+	 */
+	@Transactional(noRollbackFor = CaptchaRequiredException.class)
+	public ResaleListing buyNow(Long listingId, String buyerUid, String captchaId, String captchaAnswer) {
+		ResaleListing l = listings.findForUpdate(listingId)
+			.orElseThrow(() -> new NoSuchElementException("재판매 건 없음: " + listingId));
+		if (l.getStatus() != ResaleStatus.LISTED) {
+			throw new IllegalStateException("방금 다른 사람이 구매했거나 판매가 끝났습니다");
+		}
+		if (!l.isLotteryDone()) {
+			throw new IllegalStateException("아직 추첨 기간입니다. 응모해 주세요");
+		}
+		RiskAssessment risk = checkBuyer(l, buyerUid, captchaId, captchaAnswer, "RESALE_BUY", "구매");
+		ResaleEntry e = entries.save(new ResaleEntry(listingId, buyerUid, risk.riskLevel()));
+		e.setDrawRank(1);
+		l.setWinnerUid(buyerUid);
+		move(l, ResaleStatus.DRAWN, "선착순 구매: " + buyerUid);
+		return pay(listingId, buyerUid);
+	}
+
+	/** 응모·선착순 구매 공통 조건. 판매자 본인, 공통 한도가 찬 사람, 고위험은 불가. 주의는 보안문자 */
+	private RiskAssessment checkBuyer(ResaleListing l, String buyerUid, String captchaId, String captchaAnswer,
+			String action, String verb) {
+		if (l.getSellerUid().equals(buyerUid)) {
+			throw new IllegalStateException("판매자 본인은 " + verb + "할 수 없습니다");
+		}
 		QuotaService.Usage usage = quota.usage(buyerUid, l.getPerformanceCode());
 		if (usage.full()) {
-			throw new IllegalStateException(
-					"구매 한도(연동 예매처 합산 " + usage.used() + "/" + usage.limit() + "매)가 꽉 차 응모할 수 없습니다");
+			throw new IllegalStateException("구매 한도(연동 예매처 합산 " + usage.used() + "/" + usage.limit() + "매)가 꽉 차 "
+					+ verb + "할 수 없습니다");
 		}
 		RiskAssessment risk = riskService.assess(buyerUid, l.getPerformanceCode());
 		if ("HIGH".equals(risk.riskLevel())) {
-			throw new IllegalStateException("위험 등급 HIGH 사용자는 응모가 제한됩니다");
+			throw new IllegalStateException("위험 등급 HIGH 사용자는 " + verb + "가 제한됩니다");
 		}
 		if ("MEDIUM".equals(risk.riskLevel())) {
 			if (captchaId == null) {
 				throw new CaptchaRequiredException(false);
 			}
 			if (!captcha.verify(captchaId, captchaAnswer)) {
-				riskService.record(l.getVendorId(), buyerUid, l.getPerformanceCode(), "RESALE_ENTRY", "CAPTCHA_FAIL",
-						null, null);
+				riskService.record(l.getVendorId(), buyerUid, l.getPerformanceCode(), action, "CAPTCHA_FAIL", null,
+						null);
 				throw new CaptchaRequiredException(true);
 			}
 		}
-		return entries.save(new ResaleEntry(listingId, buyerUid, risk.riskLevel()));
+		return risk;
 	}
 
-	/** 4. 추첨. 응모자가 없으면 만료 후 원 구매자 권한 복원 */
+	/**
+	 * 4. 추첨 (추첨 구간 마감 시 자동, 또는 관리자 버튼).
+	 * 응모자가 없으면: HYBRID 이고 판매 종료 전이면 선착순으로 전환, 아니면 만료 후 원 구매자 권한 복원
+	 */
 	public ResaleListing draw(Long listingId) {
 		ResaleListing l = get(listingId);
 		require(l, ResaleStatus.LISTED);
+		if (l.isLotteryDone()) {
+			throw new IllegalStateException("이미 추첨이 끝나 선착순으로 판매 중입니다");
+		}
 		List<ResaleEntry> all = new ArrayList<>(entries.findByListingIdOrderByIdAsc(listingId));
 		if (all.isEmpty()) {
-			expireAndRestore(l, "응모자 없음");
+			if (canSwitchToFirstCome(l)) {
+				l.markLotteryDone();
+				history.save(new ResaleHistory(l.getId(), ResaleStatus.LISTED, ResaleStatus.LISTED,
+						"추첨 마감, 응모자 없음 → 선착순 판매로 전환"));
+			}
+			else {
+				expireAndRestore(l, "응모자 없음");
+			}
 			return l;
 		}
+		l.markLotteryDone();
 		Collections.shuffle(all, random);
 		for (int i = 0; i < all.size(); i++) {
 			all.get(i).setDrawRank(i + 1);
@@ -194,7 +257,13 @@ public class ResaleService {
 		ranked.stream().filter(e -> e.getBuyerUid().equals(l.getWinnerUid())).findFirst().ifPresent(ResaleEntry::forfeit);
 		ResaleEntry next = ranked.stream().filter(e -> !e.isForfeited()).findFirst().orElse(null);
 		if (next == null) {
-			expireAndRestore(l, "결제 기한 초과, 남은 당첨자 없음");
+			if (canSwitchToFirstCome(l)) {
+				l.clearWinner();
+				move(l, ResaleStatus.LISTED, "결제 기한 초과, 남은 당첨자 없음 → 선착순 판매로 전환");
+			}
+			else {
+				expireAndRestore(l, "결제 기한 초과, 남은 당첨자 없음");
+			}
 		}
 		else {
 			l.setWinnerUid(next.getBuyerUid());
@@ -243,6 +312,21 @@ public class ResaleService {
 				l.getPrice()), key(l, "payout"));
 		move(l, ResaleStatus.SETTLED, l.getSellerUid() + " 정산 완료 (" + l.getPrice() + "원)");
 		return l;
+	}
+
+	/** 판매 종료 시각 도달. LOTTERY 방식이면 이때 추첨, HYBRID 면 안 팔린 것이므로 원 구매자 권한 복원 */
+	public ResaleListing closeSale(Long listingId) {
+		ResaleListing l = get(listingId);
+		require(l, ResaleStatus.LISTED);
+		if (l.getLotteryCloseAt() == null) {
+			return draw(listingId);
+		}
+		expireAndRestore(l, "판매 종료(공연 임박), 미판매");
+		return l;
+	}
+
+	private static boolean canSwitchToFirstCome(ResaleListing l) {
+		return l.getLotteryCloseAt() != null && LocalDateTime.now().isBefore(l.getSaleCloseAt());
 	}
 
 	/** 판매 전 취소 */
