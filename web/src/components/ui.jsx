@@ -88,6 +88,7 @@ const POSTERS = {
   'PERF-002': { bg: 'linear-gradient(160deg,#1e1b4b 0%,#3b2a7a 50%,#f6c453 140%)', a: '#f6c453', b: '#a78bfa' },
   'PERF-003': { bg: 'linear-gradient(160deg,#04111f 0%,#0c3b5c 60%,#7dd3fc 150%)', a: '#7dd3fc', b: '#1d4ed8' },
   'PERF-004': { bg: 'linear-gradient(150deg,#ff7a18 0%,#ff3d54 60%,#7a1fa2 130%)', a: '#ffe259', b: '#ff3d54' },
+  'PERF-005': { bg: 'linear-gradient(155deg,#1a2e1a 0%,#2f5d3a 55%,#f4a261 140%)', a: '#f4a261', b: '#a7f3d0' },
 }
 export function Poster({ perf, large }) {
   const p = POSTERS[perf.code ?? perf.performanceCode] ?? POSTERS['PERF-001']
@@ -114,8 +115,8 @@ export const TICKET_STATUS = {
 
 export const RESALE_STATUS = {
   RESALE_PENDING: { label: '승인 대기', tone: 'warn' },
-  LISTED: { label: '판매 중 · 응모 접수', tone: 'info' },
-  DRAWN: { label: '추첨 완료 · 결제 대기', tone: 'warn' },
+  LISTED: { label: '판매 중', tone: 'info' },
+  DRAWN: { label: '당첨 · 결제 대기', tone: 'warn' },
   PAID: { label: '결제 완료', tone: 'info' },
   REISSUED: { label: '재발급 완료', tone: 'info' },
   SETTLED: { label: '거래 완료 · 정산됨', tone: 'good' },
@@ -165,7 +166,7 @@ export function ResaleStepper({ status }) {
 }
 
 /* ---------- 아바타 ---------- */
-const AVATAR = { 'ft-u-001': '#f97316', 'ft-u-002': '#10b981', 'ft-u-003': '#6366f1', 'ft-u-bot': '#64748b' }
+const AVATAR = { 'ft-u-001': '#f97316', 'ft-u-002': '#10b981', 'ft-u-003': '#6366f1', 'ft-u-004': '#0ea5e9', 'ft-u-005': '#e11d48', 'ft-u-bot': '#64748b' }
 export function Avatar({ member, size = 32 }) {
   return (
     <span
