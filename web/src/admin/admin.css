@@ -18,8 +18,8 @@
 .kpi .v { font-size: 30px; font-weight: 900; margin-top: 6px; letter-spacing: -0.02em; }
 .kpi .s { font-size: 12px; color: var(--text-3); margin-top: 2px; }
 .tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-.tbl th { text-align: left; font-weight: 600; color: var(--text-3); font-size: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
-.tbl td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.tbl th { text-align: left; font-weight: 600; color: var(--text-3); font-size: 12px; padding: 10px 10px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.tbl td { padding: 12px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .tbl tr.click { cursor: pointer; }
 .tbl tr.click:hover td { background: var(--surface-2); }
 .tbl tr.sel td { background: var(--brand-soft); }
@@ -56,3 +56,8 @@
   .adm-main { padding: 20px 16px; }
 }
 .tbl td.mono { white-space: nowrap; }
+
+/* 시연 도구 설명: 문장마다 한 줄 */
+.tool p.lines { font-size: 13px; }
+/* 표 안의 공연 이름: 한 줄 */
+.tbl .cell-title { display: block; font-size: 13px; white-space: nowrap; }

@@ -194,7 +194,7 @@ function ResaleTable({ resales, selected, onSelect, title }) {
               <tr key={r.id} className={`click ${selected === r.id ? 'sel' : ''}`} onClick={() => onSelect(r.id)}>
                 <td className="muted">{r.id}</td>
                 <td>
-                  <b>{r.performanceTitle ?? r.performanceCode}</b>
+                  <b className="cell-title">{r.performanceTitle ?? r.performanceCode}</b>
                   <div className="tiny muted">
                     {vname(r.vendorId)} · {r.seat ?? `티켓 ${r.vendorTicketId}`}
                   </div>
@@ -522,7 +522,11 @@ function Tools({ failReissue, setFailReissue }) {
             <h3>
               <Zap size={18} /> 구매 트래픽 만들기
             </h3>
-            <p>정해진 패턴의 구매 시도를 FairTicket에 보냅니다. 결과는 위험 신호·사후 검토 탭에서 확인합니다. 등급별 조치: 정상 허용, 주의 보안문자, 고위험 보류(보안문자 + 본인인증).</p>
+            <p className="lines">
+              <span>정해진 패턴의 구매 시도를 FairTicket에 보냅니다.</span>
+              <span>결과는 위험 신호·사후 검토 탭에서 확인합니다.</span>
+              <span>등급별 조치: 정상 허용 · 주의 보안문자 · 고위험 보류(보안문자 + 본인인증)</span>
+            </p>
             <div className="row wrap">
               <button className="btn" disabled={busy} onClick={() => run('normal')}>
                 <Users size={16} /> 정상 사용자
@@ -550,8 +554,9 @@ function Tools({ failReissue, setFailReissue }) {
             </h3>
             <button className={`switch ${failReissue ? 'on' : ''}`} onClick={toggle} aria-label="재발급 실패 스위치" />
           </div>
-          <p>
-            켜면 당첨자가 결제한 뒤 발행처 재발급이 3번 실패하도록 만듭니다. 이때 새 구매자에게 환불하고 원 구매자의 티켓 사용 권한을 복원하는 예외 흐름을 보여줄 수 있습니다.
+          <p className="lines">
+            <span>켜면 당첨자가 결제한 뒤 발행처 재발급이 3번 실패합니다.</span>
+            <span>새 구매자 환불과 원 구매자 권한 복원 흐름을 볼 수 있습니다.</span>
           </p>
           {failReissue && <span className="badge bad">켜짐 · 다음 결제부터 재발급 실패</span>}
           <div className="spread" style={{ marginTop: 22 }}>
@@ -560,8 +565,11 @@ function Tools({ failReissue, setFailReissue }) {
             </h3>
             <button className={`switch ${loseResp ? 'on' : ''}`} onClick={toggleLose} aria-label="재발급 응답 유실 스위치" />
           </div>
-          <p>
-            켜면 다음 재발급 1회는 발행처가 처리했는데 응답이 네트워크에서 사라진 상황이 됩니다. FairTicket은 같은 멱등키로 다시 요청하고, 발행처는 다시 처리하지 않고 저장된 결과를 돌려줍니다. 재판매 진행 기록에서 중복 발급 없이 끝나는 것을 확인할 수 있습니다.
+          <p className="lines">
+            <span>켜면 다음 재발급 1회의 응답이 네트워크에서 사라집니다.</span>
+            <span>FairTicket은 같은 멱등키로 다시 요청하고,</span>
+            <span>발행처는 다시 처리하지 않고 저장된 결과를 돌려줍니다.</span>
+            <span>재판매 진행 기록에서 중복 발급이 없는지 확인하세요.</span>
           </p>
           {loseResp && <span className="badge bad">켜짐 · 다음 재발급 1회 응답 유실</span>}
         </div>
