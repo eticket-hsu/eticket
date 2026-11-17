@@ -23,10 +23,17 @@ public record FairTicketProperties(Map<String, Vendor> vendors, int reissueMaxAt
 	}
 
 	/**
+	 * @param selection          구매자 선정 방식. HYBRID: 공연 lotteryHoursBefore 시간 전까지 추첨, 그 뒤 선착순 / LOTTERY: 끝까지 추첨
+	 * @param lotteryHoursBefore HYBRID 에서 추첨이 끝나고 선착순으로 바뀌는 시점 (공연 N시간 전)
 	 * @param applyHoursBefore 신청 마감: 공연 N시간 전까지 신청 가능
 	 * @param closeHoursBefore 판매 종료: 공연 N시간 전에 판매를 끝내고 미판매면 원 구매자 권한 복원
 	 * @param paymentMinutes   당첨자 결제 기한(분)
 	 */
-	public record ResaleDefaults(int applyHoursBefore, int closeHoursBefore, int paymentMinutes) {
+	public record ResaleDefaults(String selection, int lotteryHoursBefore, int applyHoursBefore, int closeHoursBefore,
+			int paymentMinutes) {
+
+		public boolean hybrid() {
+			return !"LOTTERY".equalsIgnoreCase(selection);
+		}
 	}
 }

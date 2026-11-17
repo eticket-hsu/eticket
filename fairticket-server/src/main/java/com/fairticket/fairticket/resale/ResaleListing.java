@@ -53,6 +53,12 @@ public class ResaleListing {
 
 	private LocalDateTime createdAt = LocalDateTime.now();
 
+	/** 추첨 마감 시각 (HYBRID). 이후로는 선착순. null 이면 LOTTERY 방식(판매 종료 때 추첨) */
+	private LocalDateTime lotteryCloseAt;
+
+	/** 추첨 구간이 끝났는지. true 면 응모는 막히고 선착순으로 바로 살 수 있다 */
+	private boolean lotteryDone;
+
 	protected ResaleListing() {
 	}
 
@@ -76,6 +82,32 @@ public class ResaleListing {
 		ResaleStatus from = status;
 		status = to;
 		return from;
+	}
+
+	void setLotteryCloseAt(LocalDateTime lotteryCloseAt) {
+		this.lotteryCloseAt = lotteryCloseAt;
+	}
+
+	void markLotteryDone() {
+		this.lotteryDone = true;
+	}
+
+	void clearWinner() {
+		this.winnerUid = null;
+		this.paymentDeadline = null;
+	}
+
+	public LocalDateTime getLotteryCloseAt() {
+		return lotteryCloseAt;
+	}
+
+	public boolean isLotteryDone() {
+		return lotteryDone;
+	}
+
+	/** 화면용: 지금 구매자를 정하는 방식. LOTTERY = 응모 후 추첨, FIRST_COME = 먼저 결제하는 사람 */
+	public String getSelectionPhase() {
+		return lotteryDone ? "FIRST_COME" : "LOTTERY";
 	}
 
 	/** 새 당첨자를 정하고 결제 기한을 다시 잰다 */
