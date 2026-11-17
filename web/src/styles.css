@@ -154,3 +154,7 @@ input.field:focus, textarea.field:focus { outline: 2px solid var(--brand); outli
 .who { display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
 .who b { color: var(--text, inherit); font-weight: 600; }
 .chip-reason .who b { color: inherit; }
+
+/* 여러 문장 안내문: 문장마다 한 줄로 끊어 문장 중간에서 줄이 바뀌지 않게 한다 (좁은 화면에서는 자연스럽게 줄바꿈) */
+.lines > span { display: block; white-space: nowrap; }
+@media (max-width: 760px) { .lines > span { white-space: normal; } }

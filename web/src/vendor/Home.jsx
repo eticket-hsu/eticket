@@ -27,7 +27,10 @@ export default function Home() {
           <br />
           {vendor.name}에서 안전하게 예매하세요
         </h1>
-        <p>{vendor.name}는 FairTicket과 연동되어 있어 매크로·다중 계정 구매를 함께 막고, 못 가게 된 티켓은 공식 재판매로 정가에 넘길 수 있습니다.</p>
+        <p className="lines">
+          <span>{vendor.name}은 FairTicket과 연동되어 매크로·다중 계정 구매를 함께 막습니다.</span>
+          <span>못 가게 된 티켓은 공식 재판매로 정가 이하에 넘길 수 있습니다.</span>
+        </p>
         <div className="chips">
           <span className="chip">
             <ShieldCheck size={15} /> FairTicket 부정구매 공동 대응
