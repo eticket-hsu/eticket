@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { NavLink, Route, Routes, Link } from 'react-router-dom'
+import { NavLink, Route, Routes, Link, useNavigate } from 'react-router-dom'
 import { ChevronDown, Star, Moon, Ticket, Repeat, LayoutGrid } from 'lucide-react'
 import { api, session, VENDORS } from '../api.js'
-import { Avatar, Modal, usePolling } from '../components/ui.jsx'
+import { Avatar, Modal, usePolling, useToast } from '../components/ui.jsx'
 import LoginModal from './LoginModal.jsx'
 import Home from './Home.jsx'
 import PerformanceDetail from './PerformanceDetail.jsx'
@@ -19,7 +19,10 @@ export default function VendorApp({ vendorId }) {
   const [members, setMembers] = useState([])
   const [meId, setMeId] = useState(() => session.get(vendorId))
   const [offline, setOffline] = useState(false)
-  const [loginOpen, setLoginOpen] = useState(false)
+  // null: 닫힘 / 'header': 상단 로그인 버튼 / 'switch': 로그인한 채 계정 메뉴 / 'action': 예매·응모처럼 로그인이 필요한 동작
+  const [loginFrom, setLoginFrom] = useState(null)
+  const navigate = useNavigate()
+  const toast = useToast()
   const [myCount, setMyCount] = useState(0)
 
   const me = members.find((m) => String(m.id) === String(meId)) ?? null
@@ -49,13 +52,27 @@ export default function VendorApp({ vendorId }) {
     }
   }, 4000, [meId])
 
+  /**
+   * 로그인 후 이동 (멜론티켓처럼 들어온 곳 기준):
+   * - 상단 로그인 버튼 → 홈으로 (메인에서 로그인하면 메인으로 돌아가는 것과 같음)
+   * - 예매·응모·내 티켓처럼 동작 중에 로그인 → 그 화면에 그대로 남아 이어서 진행
+   * - 계정 바꾸기(시연용) → 그 화면에 남음, 로그아웃 → 홈으로
+   */
   const login = (m) => {
+    const from = loginFrom
     setMeId(m ? String(m.id) : null)
     session.set(vendorId, m?.id)
-    setLoginOpen(false)
+    setLoginFrom(null)
+    if (!m) {
+      toast('로그아웃했습니다')
+      navigate(`/${vendorId}`)
+      return
+    }
+    toast(`${m.name}님, 반갑습니다`, 'good')
+    if (from === 'header') navigate(`/${vendorId}`)
   }
 
-  const value = { vendor, vendorId, members, me, login, openLogin: () => setLoginOpen(true), offline }
+  const value = { vendor, vendorId, members, me, login, openLogin: () => setLoginFrom('action'), offline }
 
   return (
     <Ctx.Provider value={value}>
@@ -78,11 +95,11 @@ export default function VendorApp({ vendorId }) {
               </NavLink>
             </nav>
             {me ? (
-              <button className="v-user" onClick={() => setLoginOpen(true)}>
+              <button className="v-user" onClick={() => setLoginFrom('switch')}>
                 <Avatar member={me} size={30} /> {me.name}님 <ChevronDown size={16} />
               </button>
             ) : (
-              <button className="btn primary sm" onClick={() => setLoginOpen(true)}>
+              <button className="btn primary sm" onClick={() => setLoginFrom('header')}>
                 로그인
               </button>
             )}
@@ -101,7 +118,7 @@ export default function VendorApp({ vendorId }) {
             <Route path="resale" element={<ResaleMarket />} />
           </Routes>
         </main>
-        {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
+        {loginFrom && <LoginModal onClose={() => setLoginFrom(null)} />}
       </div>
     </Ctx.Provider>
   )

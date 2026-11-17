@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Network, Send, UserX } from 'lucide-react'
 import { api, VENDORS } from '../api.js'
-import { usePolling, useToast } from '../components/ui.jsx'
+import { Who, usePolling, useToast } from '../components/ui.jsx'
 
 const vname = (id) => VENDORS[id]?.name ?? id
 
@@ -94,7 +94,7 @@ export default function ReviewTab() {
               <tbody>
                 {review.suspects.map((s) => (
                   <tr key={s.uid}>
-                    <td className="mono">{s.uid}</td>
+                    <td><Who uid={s.uid} /></td>
                     <td className="small">{s.vendors.map(vname).join(', ')}</td>
                     <td className="small">
                       {s.attempts}회 · {s.successes}매
@@ -147,8 +147,8 @@ export default function ReviewTab() {
                   </div>
                   <div style={{ marginTop: 8 }}>
                     {c.uids.map((u) => (
-                      <span key={u} className="chip-reason mono">
-                        {u}
+                      <span key={u} className="chip-reason">
+                        <Who uid={u} />
                       </span>
                     ))}
                   </div>
