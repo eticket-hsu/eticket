@@ -129,8 +129,11 @@ export default function ReviewTab() {
               <Network size={17} /> 계정 묶음 {review?.clusters.length ?? 0}개
             </h2>
           </div>
-          <p className="small muted" style={{ padding: '12px 18px 0' }}>
-            같은 IP로 이어진 계정들을 <b>여러 예매처에 걸쳐</b> 묶었습니다. 한 예매처는 자기 사이트의 계정만 볼 수 있어 이 묶음을 알 수 없습니다.
+          <p className="small muted lines" style={{ padding: '12px 18px 0', fontSize: 12.5 }}>
+            <span>
+              같은 IP로 이어진 계정들을 <b>여러 예매처에 걸쳐</b> 묶었습니다.
+            </span>
+            <span>한 예매처는 자기 사이트 계정만 볼 수 있어 이 묶음을 알 수 없습니다.</span>
           </p>
           {!review?.clusters.length ? (
             <div className="empty">묶인 계정이 없습니다</div>

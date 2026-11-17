@@ -16,7 +16,7 @@
 
 .v-hero { border-radius: 22px; padding: 40px; color: #fff; position: relative; overflow: hidden; margin-bottom: 36px; }
 .v-hero h1 { font-size: 36px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.2; }
-.v-hero p { margin-top: 10px; font-size: 16px; opacity: 0.9; max-width: 560px; line-height: 1.6; }
+.v-hero p { margin-top: 10px; font-size: 15px; opacity: 0.9; line-height: 1.6; }
 .v-hero .chips { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
 .v-hero .chip { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 99px; background: rgba(255,255,255,0.14); font-size: 13px; font-weight: 600; backdrop-filter: blur(4px); }
 .v-hero .orb { position: absolute; border-radius: 50%; background: var(--accent); opacity: 0.2; }
