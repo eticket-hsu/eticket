@@ -178,3 +178,47 @@ export function Avatar({ member, size = 32 }) {
     </span>
   )
 }
+
+/* ---------- 회원 이름 (관리자 화면용) ----------
+ * FairTicket 은 공통 ID(ft-u-…)만 갖고 이름은 모른다. 시연 화면에서 알아보기 쉽게
+ * 예매처 회원 목록에서 이름을 찾아 "이름 (ID)" 로 보여 준다. 처음 한 번만 불러와 공유한다. */
+let namesCache = null
+let namesLoading = null
+function loadNames() {
+  if (!namesLoading) {
+    namesLoading = Promise.all(
+      ['star', 'moon'].map((v) =>
+        fetch(`/proxy/${v}/api/members`)
+          .then((r) => (r.ok ? r.json() : []))
+          .catch(() => []),
+      ),
+    ).then((lists) => {
+      namesCache = Object.fromEntries(lists.flat().map((m) => [m.ftUid, m.name]))
+      return namesCache
+    })
+  }
+  return namesLoading
+}
+
+export function useMemberNames() {
+  const [names, setNames] = useState(namesCache ?? {})
+  useEffect(() => {
+    if (!namesCache) loadNames().then(setNames)
+  }, [])
+  const withNames = useCallback(
+    (text) => (text ?? '').replace(/ft-u-[\w-]+/g, (u) => (names[u] ? `${names[u]}(${u})` : u)),
+    [names],
+  )
+  return { names, withNames }
+}
+
+/** 공통 ID 옆에 이름을 같이 보여 준다: 하늘 ft-u-004 */
+export function Who({ uid, fallback = '…' }) {
+  const { names } = useMemberNames()
+  if (!uid) return <span className="muted">{fallback}</span>
+  return (
+    <span className="who">
+      {names[uid] && <b>{names[uid]}</b>} <span className="mono tiny muted">{uid}</span>
+    </span>
+  )
+}

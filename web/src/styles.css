@@ -149,3 +149,8 @@ input.field:focus, textarea.field:focus { outline: 2px solid var(--brand); outli
 .poster .p-shape { position: absolute; z-index: -1; border-radius: 50%; filter: blur(2px); }
 .poster.lg .p-title { font-size: 34px; }
 .poster.lg { padding: 24px; }
+
+/* 관리자 화면: 이름 + 공통 ID */
+.who { display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+.who b { color: var(--text, inherit); font-weight: 600; }
+.chip-reason .who b { color: inherit; }
