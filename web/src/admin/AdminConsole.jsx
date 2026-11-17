@@ -4,7 +4,7 @@ import {
   Gauge, SearchCheck, Building2,
 } from 'lucide-react'
 import { api, VENDORS } from '../api.js'
-import { Badge, RESALE_STATUS, RISK, ResaleStepper, timeLabel, usePolling, useToast, won } from '../components/ui.jsx'
+import { Badge, RESALE_STATUS, RISK, ResaleStepper, Who, timeLabel, useMemberNames, usePolling, useToast, won } from '../components/ui.jsx'
 import { runTraffic } from './traffic.js'
 import ReviewTab from './ReviewTab.jsx'
 import './admin.css'
@@ -200,7 +200,7 @@ function ResaleTable({ resales, selected, onSelect, title }) {
                   </div>
                 </td>
                 <td className="mono small">
-                  {r.sellerUid} → {r.winnerUid ?? '…'}
+                  <Who uid={r.sellerUid} /> → <Who uid={r.winnerUid} />
                 </td>
                 <td>
                   <Badge map={RESALE_STATUS} value={r.status} />
@@ -215,6 +215,7 @@ function ResaleTable({ resales, selected, onSelect, title }) {
 }
 
 function ResaleDetail({ id }) {
+  const { withNames } = useMemberNames()
   const [d, setD] = useState(null)
   const toast = useToast()
   usePolling(async () => {
@@ -279,7 +280,7 @@ function ResaleDetail({ id }) {
                   <b>{RESALE_STATUS[h.toStatus]?.label ?? h.toStatus}</b>
                   <span className="tiny muted mono">{timeLabel(h.at)}</span>
                 </div>
-                <p>{h.note}</p>
+                <p>{withNames(h.note)}</p>
               </li>
             ))}
           </ul>
@@ -295,7 +296,7 @@ function ResaleDetail({ id }) {
               <tbody>
                 {d.entries.map((e) => (
                   <tr key={e.id}>
-                    <td className="mono small">{e.buyerUid}</td>
+                    <td className="small"><Who uid={e.buyerUid} /></td>
                     <td>
                       <Badge map={RISK} value={e.riskLevel} />
                     </td>
@@ -336,7 +337,7 @@ function RiskTable({ risks, compact }) {
             {risks.map((r) => (
               <tr key={r.uid + r.performanceCode}>
                 <td>
-                  <span className="mono">{r.uid}</span>
+                  <Who uid={r.uid} />
                   <div className="tiny muted">{r.performanceCode}</div>
                 </td>
                 <td>
@@ -400,7 +401,7 @@ function QuotaTable({ rows }) {
             {rows.map((q) => (
               <tr key={q.id}>
                 <td className="mono small">{timeLabel(q.createdAt)}</td>
-                <td className="mono">{q.uid}</td>
+                <td><Who uid={q.uid} /></td>
                 <td className="small">{q.performanceCode}</td>
                 <td>{vname(q.vendorId)}</td>
                 <td className="small">{q.source === 'RESALE' ? '공식 재판매' : '일반 구매'}</td>
