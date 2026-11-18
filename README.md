@@ -20,11 +20,25 @@ FairTicket 은 티켓과 돈을 갖지 않는다. 잠금·재발급·결제·환
 
 필요: Java 21 이상, Node 20 이상. (Gradle 은 wrapper 가 알아서 받음)
 
+**맥·리눅스**
+
 ```bash
 ./run-all.sh
 ```
 
-한 번에 서버 3개와 웹을 띄운다. 종료는 Ctrl+C. 따로 띄우려면:
+한 번에 서버 3개와 웹을 띄운다. 종료는 Ctrl+C.
+
+**윈도우** (명령 프롬프트·PowerShell, 또는 탐색기에서 더블클릭)
+
+```bat
+run-all.cmd
+```
+
+서버 3개와 웹이 각각 새 창으로 뜬다. 종료는 `stop-all.cmd` 또는 열린 창 4개를 닫는다. Git Bash·WSL 에서는 `./run-all.sh` 도 된다.
+
+브라우저에서 http://localhost:5173 을 연다 (서버가 뜨는 데 30초~1분).
+
+따로 띄우려면 (윈도우는 `./gradlew` 대신 `gradlew.bat`, 경로는 `\`):
 
 ```bash
 cd fairticket-server && ./gradlew bootRun
@@ -35,7 +49,7 @@ cd web && npm install && npm run dev
 
 > 같은 프로젝트에서 `bootRun` 을 두 번 동시에 돌리면 Gradle 잠금 때문에 멈춘다. 예매처 두 개는 jar 로 띄운다.
 
-DB 는 H2 인메모리라 재시작하면 시드 데이터(회원 민지·지수·서연·매크로봇, 공연 1개)로 초기화된다.
+DB 는 H2 인메모리라 재시작하면 시드 데이터로 초기화된다. 회원: 민지·지수·서연·하늘·도윤·매크로봇. 공연: 별티켓 4개(PERF-001·002·004·005), 달티켓 3개(PERF-001·002·003). 시연용 본인인증 번호는 `123456`.
 H2 콘솔: `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:fairticket`).
 
 ## 화면
@@ -82,6 +96,8 @@ H2 콘솔: `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:fairticket`
 tests/e2e/run.sh            # 전부
 tests/e2e/run.sh auth       # 하나만
 ```
+
+윈도우는 `tests\e2e\run.cmd` (하나만: `tests\e2e\run.cmd auth`).
 
 ## 주요 API
 
