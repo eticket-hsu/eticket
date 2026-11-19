@@ -57,6 +57,36 @@ export async function runTraffic(kind, log) {
     log('→ 개별 점수는 낮아도 사후 검토 탭에서 여러 예매처에 걸친 계정 묶음으로 드러납니다')
     return
   }
+  if (kind === 'scalper') {
+    // 암표상: 좌석 화면 없이 두 예매처에서 연달아 실제 구매. 보안문자는 풀이 대행으로 통과시킴
+    log('암표상(매크로봇)이 별티켓·달티켓에서 NEON WAVE를 화면 없이 연달아 구매합니다')
+    const buyAt = async (vendor) => {
+      const members = await api.get(vendor, '/api/members')
+      const bot = members.find((m) => m.ftUid === 'ft-u-bot')
+      const perf = (await api.get(vendor, '/api/performances')).find((p) => p.code === PERF)
+      const url = `/api/performances/${perf.id}/purchase`
+      try {
+        return await api.post(vendor, url, { memberId: bot.id })
+      } catch (e) {
+        if (!e.data?.captchaRequired) throw e
+        const c = await api.get('ft', '/v1/captcha')
+        const a = await api.get('ft', `/v1/demo/captcha/${c.id}`)
+        log(`   ${vendor === 'star' ? '별티켓' : '달티켓'}이 보안문자 요구 → 풀이 대행으로 통과`)
+        return await api.post(vendor, url, { memberId: bot.id, captchaId: c.id, captchaAnswer: a.answer })
+      }
+    }
+    for (const vendor of ['star', 'moon', 'star', 'moon', 'star']) {
+      const name = vendor === 'star' ? '별티켓' : '달티켓'
+      try {
+        const r = await buyAt(vendor)
+        log(`→ ${name} 구매 성공: ${r.ticket.seat}`)
+      } catch (e) {
+        log(`→ ${name} 실패: ${e.data?.quotaExceeded ? '공통 구매 한도 초과' : e.data?.held ? '구매 보류(고위험)' : e.message}`)
+      }
+    }
+    log('→ 예매 단계에서는 표 일부를 가져갔습니다. 사후 검토 탭에서 의심 계정으로 찾아 표를 취소해 보세요')
+    return
+  }
   if (kind === 'buy') {
     const members = await api.get('star', '/api/members')
     const bot = members.find((m) => m.ftUid === 'ft-u-bot')
