@@ -109,6 +109,21 @@ public class TicketService {
 		return t;
 	}
 
+	/** 이 기기에서 QR 을 볼 수 있는지 (처음이면 이 기기로 묶음) */
+	public boolean bindOrMatch(Long ticketId, String deviceHash) {
+		return get(ticketId).bindOrMatch(deviceHash);
+	}
+
+	/** 본인인증을 통과한 주인이 다른 기기로 옮김 */
+	public Ticket moveToDevice(Long ticketId, Long memberId, String deviceHash) {
+		Ticket t = get(ticketId);
+		if (!t.getOwner().getId().equals(memberId)) {
+			throw new IllegalStateException("티켓 주인만 기기를 옮길 수 있습니다");
+		}
+		t.moveToDevice(deviceHash);
+		return t;
+	}
+
 	/** 입장 처리. 승인과 사용 기록은 조건부 업데이트 한 번으로 묶는다. */
 	public AdmitResult admit(String qr) {
 		QrCodec.Parsed parsed = qrCodec.parse(qr);
@@ -124,6 +139,10 @@ public class TicketService {
 		}
 		if (parsed.version() != t.getIssueVersion()) {
 			return AdmitResult.OUTDATED_VERSION;
+		}
+		// 계속 바뀌는 QR: 1분 넘게 지난 QR(화면 캡처·인쇄본)과 시간칸이 없는 예전 고정 QR 은 거절
+		if (parsed.window() == null || !QrCodec.fresh(parsed.window())) {
+			return AdmitResult.EXPIRED_QR;
 		}
 		int updated = tickets.admit(t.getId(), parsed.version(), LocalDateTime.now(), TicketStatus.VALID,
 				TicketStatus.USED);

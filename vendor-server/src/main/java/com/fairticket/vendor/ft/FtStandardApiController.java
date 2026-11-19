@@ -40,19 +40,19 @@ public class FtStandardApiController {
 
 	@GetMapping("/tickets/{id}")
 	public TicketView get(@PathVariable Long id) {
-		return TicketView.of(ticketService.get(id), qrCodec);
+		return TicketView.of(ticketService.get(id));
 	}
 
 	/** 재판매 승인 + 기존 QR 사용 제한 */
 	@PostMapping("/tickets/{id}/lock")
 	public TicketView lock(@PathVariable Long id) {
-		return TicketView.of(ticketService.lock(id), qrCodec);
+		return TicketView.of(ticketService.lock(id));
 	}
 
 	/** 취소·만료 시 원 구매자 권한 복원 */
 	@PostMapping("/tickets/{id}/unlock")
 	public TicketView unlock(@PathVariable Long id) {
-		return TicketView.of(ticketService.unlock(id), qrCodec);
+		return TicketView.of(ticketService.unlock(id));
 	}
 
 	/** acquiredPrice: 재판매 거래 가격 → 새 소유자의 취득가 */
@@ -62,7 +62,7 @@ public class FtStandardApiController {
 	/** 기존 티켓 무효화 + 새 구매자에게 재발급 (발급 버전 +1, 취득가 기록) */
 	@PostMapping("/tickets/{id}/reissue")
 	public TicketView reissue(@PathVariable Long id, @RequestBody ReissueRequest req) {
-		return TicketView.of(ticketService.reissue(id, req.newOwnerFtUid(), req.acquiredPrice()), qrCodec);
+		return TicketView.of(ticketService.reissue(id, req.newOwnerFtUid(), req.acquiredPrice()));
 	}
 
 	public record AdmitRequest(@NotBlank String qr) {
@@ -72,8 +72,17 @@ public class FtStandardApiController {
 	@PostMapping("/admit")
 	public Map<String, Object> admit(@RequestBody AdmitRequest req) {
 		AdmitResult result = ticketService.admit(req.qr());
-		return Map.of("result", result.name(), "message", result.getMessage(), "admitted",
-				result == AdmitResult.ADMITTED);
+		Map<String, Object> out = new java.util.HashMap<>(Map.of("result", result.name(), "message", result.getMessage(),
+				"admitted", result == AdmitResult.ADMITTED));
+		// 입장 승인 시 표 주인 정보: FairTicket 이 의심 표인지 보고 현장 신분증 확인을 요청하는 데 쓴다
+		QrCodec.Parsed p = qrCodec.parse(req.qr());
+		if (result == AdmitResult.ADMITTED && p != null) {
+			var t = ticketService.get(p.ticketId());
+			out.put("ownerFtUid", t.getOwner().getFtUid());
+			out.put("ownerName", t.getOwner().getName());
+			out.put("performanceCode", t.getPerformance().getCode());
+		}
+		return out;
 	}
 
 	// ---- 아래는 가상 결제·정산 자리 (MVP 에선 항상 성공) ----

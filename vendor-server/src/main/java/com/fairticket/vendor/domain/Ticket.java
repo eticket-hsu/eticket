@@ -45,6 +45,12 @@ public class Ticket {
 
 	private LocalDateTime usedAt;
 
+	/** QR 을 볼 수 있는 기기 (기기 ID 해시). 처음 QR 을 연 기기로 묶이고, 본인인증을 해야 다른 기기로 옮겨진다 */
+	private String boundDevice;
+
+	/** 다른 기기로 옮긴 횟수. 잦으면 계정 양도 의심 신호 */
+	private int deviceChanges;
+
 	protected Ticket() {
 	}
 
@@ -75,6 +81,33 @@ public class Ticket {
 		this.acquiredPrice = acquiredPrice;
 		this.issueVersion++;
 		this.status = TicketStatus.VALID;
+		// 새 주인은 자기 기기에서 처음 QR 을 열 때 다시 묶인다
+		this.boundDevice = null;
+		this.deviceChanges = 0;
+	}
+
+	/** 아직 묶인 기기가 없으면 이 기기로 묶는다. 이 기기에서 QR 을 볼 수 있으면 true */
+	public boolean bindOrMatch(String deviceHash) {
+		if (deviceHash == null) {
+			return false;
+		}
+		if (boundDevice == null) {
+			boundDevice = deviceHash;
+			return true;
+		}
+		return boundDevice.equals(deviceHash);
+	}
+
+	/** 본인인증을 거쳐 다른 기기로 옮긴다 */
+	public void moveToDevice(String deviceHash) {
+		if (!deviceHash.equals(boundDevice)) {
+			boundDevice = deviceHash;
+			deviceChanges++;
+		}
+	}
+
+	public int getDeviceChanges() {
+		return deviceChanges;
 	}
 
 	/** 재판매 가격 상한 = min(최초가, 현재 소유자 취득가). 싸게 사서 비싸게 되파는 차익을 막는다. */

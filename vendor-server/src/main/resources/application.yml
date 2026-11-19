@@ -17,3 +17,5 @@ spring:
 
 vendor:
   fairticket-url: http://localhost:8080
+  # 시연용 기능(화면에서 접속 위치를 해외·VPN 으로 바꿔 보기). 실서비스에서는 false
+  demo-mode: true
