@@ -42,6 +42,12 @@ public class FairTicketClient {
 	/** reactionMs: 좌석 화면을 연 뒤 예매 요청까지 걸린 시간 (-1 = 화면 없이 요청) */
 	public void reportPurchaseAttempt(String ftUid, String performanceCode, String result, String ip,
 			Integer reactionMs) {
+		reportPurchaseAttempt(ftUid, performanceCode, result, ip, reactionMs, null);
+	}
+
+	/** clientTimezone: 브라우저 시간대 (예: Asia/Seoul). IP 위치와 다르면 VPN 신호로 쓰인다 */
+	public void reportPurchaseAttempt(String ftUid, String performanceCode, String result, String ip,
+			Integer reactionMs, String clientTimezone) {
 		Map<String, Object> body = new HashMap<>();
 		body.put("vendorId", props.id());
 		body.put("uid", ftUid);
@@ -50,6 +56,7 @@ public class FairTicketClient {
 		body.put("result", result);
 		body.put("ip", ip == null ? "" : ip);
 		body.put("reactionMs", reactionMs);
+		body.put("clientTimezone", clientTimezone);
 		try {
 			http.post()
 				.uri("/v1/purchase-events")
