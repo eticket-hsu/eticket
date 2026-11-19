@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { NavLink, Route, Routes, Link, useNavigate } from 'react-router-dom'
-import { ChevronDown, Star, Moon, Ticket, Repeat, LayoutGrid } from 'lucide-react'
-import { api, session, VENDORS } from '../api.js'
+import { ChevronDown, Star, Moon, Ticket, Repeat, LayoutGrid, MapPin } from 'lucide-react'
+import { api, session, VENDORS, DEMO_LOCATIONS, demoLocation } from '../api.js'
 import { Avatar, Modal, usePolling, useToast } from '../components/ui.jsx'
 import LoginModal from './LoginModal.jsx'
 import Home from './Home.jsx'
@@ -24,6 +24,7 @@ export default function VendorApp({ vendorId }) {
   const navigate = useNavigate()
   const toast = useToast()
   const [myCount, setMyCount] = useState(0)
+  const [location, setLocation] = useState(() => demoLocation.get())
 
   const me = members.find((m) => String(m.id) === String(meId)) ?? null
 
@@ -94,6 +95,24 @@ export default function VendorApp({ vendorId }) {
                 <Ticket size={16} /> 내 티켓 {myCount > 0 && <span className="count">{myCount}</span>}
               </NavLink>
             </nav>
+            <label className={`v-demo-loc ${location !== 'home' ? 'on' : ''}`} title="시연용: 예매 요청이 이 위치의 IP에서 온 것으로 처리됩니다">
+              <MapPin size={14} />
+              <select
+                value={location}
+                onChange={(e) => {
+                  demoLocation.set(e.target.value)
+                  setLocation(e.target.value)
+                  toast(`접속 위치: ${DEMO_LOCATIONS.find((l) => l.id === e.target.value).label} (시연용)`)
+                }}
+                aria-label="접속 위치 (시연용)"
+              >
+                {DEMO_LOCATIONS.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             {me ? (
               <button className="v-user" onClick={() => setLoginFrom('switch')}>
                 <Avatar member={me} size={30} /> {me.name}님 <ChevronDown size={16} />

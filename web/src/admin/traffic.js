@@ -4,8 +4,8 @@ import { api } from '../api.js'
 
 const PERF = 'PERF-001'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
-const event = (vendorId, uid, result, ip, reactionMs) =>
-  api.post('ft', '/v1/demo/purchase-events', { vendorId, uid, performanceCode: PERF, action: 'PURCHASE', result, ip, reactionMs })
+const event = (vendorId, uid, result, ip, reactionMs, clientTimezone = 'Asia/Seoul') =>
+  api.post('ft', '/v1/demo/purchase-events', { vendorId, uid, performanceCode: PERF, action: 'PURCHASE', result, ip, reactionMs, clientTimezone })
 
 async function report(uid, log) {
   const r = await api.get('ft', `/v1/demo/risk?uid=${uid}&performanceCode=${PERF}`)
@@ -43,6 +43,15 @@ export async function runTraffic(kind, log) {
       await sleep(20)
     }
     await report('ft-u-bot', log)
+    return
+  }
+  if (kind === 'vpn') {
+    log('VPN 사용자(서연): 사람 속도로 예매하지만 VPN·데이터센터 IP로 접속, 브라우저 시간대는 한국')
+    await event('star', 'ft-u-003', 'ATTEMPT', '198.18.0.77', 2600)
+    await sleep(800)
+    await event('moon', 'ft-u-003', 'ATTEMPT', '192.0.2.40', 2300)
+    await report('ft-u-003', log)
+    log('→ VPN·데이터센터 IP와 시간대 불일치가 겹쳐 주의 이상. 발행처가 차단 정책을 켜면 바로 보류됩니다')
     return
   }
   if (kind === 'ring') {

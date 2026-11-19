@@ -6,7 +6,7 @@ chcp 65001 >nul
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 set list=%*
-if "%list%"=="" set list=quota-resale resale-selection risk idempotency auth fraud-cancel
+if "%list%"=="" set list=quota-resale resale-selection risk idempotency auth ip-check fraud-cancel
 set fail=0
 for %%t in (%list%) do (
   echo == %%t

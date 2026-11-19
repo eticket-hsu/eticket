@@ -5,10 +5,14 @@
 async function request(base, path, options = {}) {
   // 요청 본문 변환 오류는 네트워크 문제와 구분되도록 fetch 밖에서 한다
   const body = options.body === undefined ? undefined : JSON.stringify(options.body)
+  const headers = { 'Content-Type': 'application/json' }
+  // 시연용: 예매처 화면에서 고른 접속 위치(해외·VPN 등)를 예매처 서버에 알린다
+  const demoIp = base !== 'ft' ? demoLocation.ip() : null
+  if (demoIp) headers['X-Demo-Client-Ip'] = demoIp
   let res
   try {
     res = await fetch(`/proxy/${base}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       ...options,
       body,
     })
@@ -69,6 +73,46 @@ export const PERSONAS = {
   'ft-u-004': '재판매 응모자 (추첨 확인용)',
   'ft-u-005': '재판매 응모자 (추첨 확인용)',
   'ft-u-bot': '매크로 시연용 계정',
+}
+
+/**
+ * 시연용 접속 위치. 서버의 IP 종류 목록(ip-ranges.csv)에 있는 시연용 대역을 쓴다.
+ * 실제 IP 를 바꾸지 않고, 예매처 서버가 시연 모드일 때만 이 값을 접속 IP 로 본다.
+ */
+export const DEMO_LOCATIONS = [
+  { id: 'home', label: '내 컴퓨터 (국내)', ip: null },
+  { id: 'foreign', label: '해외 IP', ip: '203.0.113.50' },
+  { id: 'vpn', label: 'VPN', ip: '198.18.0.50' },
+  { id: 'datacenter', label: '데이터센터 서버', ip: '192.0.2.50' },
+]
+
+export const demoLocation = {
+  get() {
+    try {
+      return localStorage.getItem('ft-demo-location') ?? 'home'
+    } catch {
+      return 'home'
+    }
+  },
+  set(id) {
+    try {
+      localStorage.setItem('ft-demo-location', id)
+    } catch {
+      /* 무시 */
+    }
+  },
+  ip() {
+    return DEMO_LOCATIONS.find((l) => l.id === demoLocation.get())?.ip ?? null
+  },
+}
+
+/** 브라우저 시간대 (예: Asia/Seoul). IP 위치와 다르면 VPN 신호가 된다 */
+export const browserTimezone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone
+  } catch {
+    return null
+  }
 }
 
 /** 예매처별 로그인 회원 기억 (브라우저 저장소가 막혀도 동작) */

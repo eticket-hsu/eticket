@@ -14,6 +14,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
+
+import com.fairticket.fairticket.config.FairTicketProperties;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -39,18 +41,34 @@ public class RiskService {
 	/** 한 IP 에서 움직인 계정 수 10분 기준 (보조 신호) */
 	static final int SHARED_IP_ACCOUNTS = 5;
 
+	/** IP 신호 점수 */
+	static final int VPN_POINTS = 25, DATACENTER_POINTS = 25, TOR_POINTS = 40, FOREIGN_POINTS = 10,
+			TIMEZONE_MISMATCH_POINTS = 15;
+	static final String KOREA_TIMEZONE = "Asia/Seoul";
+
 	/** 반복 실패에 세는 결과. 한도 초과(QUOTA)는 별도 규칙으로 세므로 중복해서 넣지 않는다 */
 	static final Set<String> FAILURES = Set.of("FAIL", "HELD", "CAPTCHA_FAIL");
 
 	private final PurchaseEventRepository events;
+	private final IpIntelligence ipIntel;
+	private final FairTicketProperties props;
 
-	public RiskService(PurchaseEventRepository events) {
+	public RiskService(PurchaseEventRepository events, IpIntelligence ipIntel, FairTicketProperties props) {
 		this.events = events;
+		this.ipIntel = ipIntel;
+		this.props = props;
 	}
 
 	public PurchaseEvent record(String vendorId, String uid, String performanceCode, String action, String result,
 			String ip, Integer reactionMs) {
-		return events.save(new PurchaseEvent(vendorId, uid, performanceCode, action, result, hashIp(ip), reactionMs));
+		return record(vendorId, uid, performanceCode, action, result, ip, reactionMs, null);
+	}
+
+	/** 원래 IP 는 저장하지 않는다: 같은 IP 묶기용 해시와, 판별한 IP 종류만 남긴다 */
+	public PurchaseEvent record(String vendorId, String uid, String performanceCode, String action, String result,
+			String ip, Integer reactionMs, String clientTimezone) {
+		return events.save(new PurchaseEvent(vendorId, uid, performanceCode, action, result, hashIp(ip), reactionMs,
+				ip == null ? null : ipIntel.classify(ip).name(), clientTimezone));
 	}
 
 	@Transactional(readOnly = true)
@@ -128,6 +146,9 @@ public class RiskService {
 			}
 		});
 
+		// 8~12. IP 검사: 최근 10분 동안 이 사람이 쓴 IP 종류와 브라우저 시간대
+		addIpReasons(recent, reasons);
+
 		int score = Math.min(100, reasons.stream().mapToInt(RiskAssessment.Reason::points).sum());
 		return new RiskAssessment(uid, performanceCode, RiskAssessment.levelOf(score), score, reasons, now);
 	}
@@ -144,6 +165,42 @@ public class RiskService {
 			.map(k -> assess(k.uid(), k.performanceCode()))
 			.sorted(Comparator.comparingInt(RiskAssessment::score).reversed())
 			.toList();
+	}
+
+	private void addIpReasons(List<PurchaseEvent> recent, List<RiskAssessment.Reason> reasons) {
+		Set<IpIntelligence.IpType> types = new LinkedHashSet<>();
+		boolean tzMismatch = false;
+		for (PurchaseEvent e : recent) {
+			if (e.getIpType() == null) {
+				continue;
+			}
+			IpIntelligence.IpType t = IpIntelligence.IpType.valueOf(e.getIpType());
+			types.add(t);
+			if (t.outsideKorea() && KOREA_TIMEZONE.equals(e.getClientTimezone())) {
+				tzMismatch = true;
+			}
+		}
+		if (types.contains(IpIntelligence.IpType.TOR)) {
+			reasons.add(new RiskAssessment.Reason("TOR_IP", TOR_POINTS, "Tor 네트워크에서 접속"));
+		}
+		if (types.contains(IpIntelligence.IpType.VPN)) {
+			reasons.add(new RiskAssessment.Reason("VPN_IP", VPN_POINTS, "VPN·프록시 IP에서 접속"));
+		}
+		if (types.contains(IpIntelligence.IpType.DATACENTER)) {
+			reasons.add(new RiskAssessment.Reason("DATACENTER_IP", DATACENTER_POINTS,
+					"데이터센터(클라우드 서버) IP에서 접속"));
+		}
+		if (types.contains(IpIntelligence.IpType.FOREIGN)) {
+			reasons.add(new RiskAssessment.Reason("FOREIGN_IP", FOREIGN_POINTS, "해외 IP에서 접속"));
+		}
+		if (tzMismatch) {
+			reasons.add(new RiskAssessment.Reason("TIMEZONE_MISMATCH", TIMEZONE_MISMATCH_POINTS,
+					"브라우저 시간대는 한국인데 IP는 해외·VPN"));
+		}
+		// 발행처 정책: 익명 IP 는 바로 보류 (인터파크식 VPN 차단)
+		if (props.blockAnonymousIp() && types.stream().anyMatch(IpIntelligence.IpType::anonymous)) {
+			reasons.add(new RiskAssessment.Reason("ANONYMOUS_IP_BLOCKED", 100, "익명 IP(VPN·데이터센터·Tor) 차단 정책"));
+		}
 	}
 
 	private static double stddev(double[] xs) {

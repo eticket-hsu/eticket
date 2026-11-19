@@ -35,6 +35,9 @@ fairticket:
   reissue-max-attempts: 3
   # 시연용 기능(보안문자 정답 조회 등). 실서비스에서는 false
   demo-mode: true
+  # IP 검사 정책. block-anonymous: true 면 VPN·프록시·데이터센터 IP 예매를 바로 보류 (인터파크식 차단)
+  ip-policy:
+    block-anonymous: false
   # 발행처가 공연 등록 때 재판매 기한을 보내지 않으면 쓰는 기본값 (팀 확인 대상)
   resale-defaults:
     # 구매자 선정 방식: HYBRID = 공연 lottery-hours-before 시간 전까지 추첨, 그 뒤 선착순 / LOTTERY = 끝까지 추첨
