@@ -5,10 +5,13 @@
 async function request(base, path, options = {}) {
   // 요청 본문 변환 오류는 네트워크 문제와 구분되도록 fetch 밖에서 한다
   const body = options.body === undefined ? undefined : JSON.stringify(options.body)
+  const headers = { 'Content-Type': 'application/json' }
+  // 예매처에는 기기 ID 를 보낸다: 표는 처음 QR 을 연 기기에서만 보인다
+  if (base !== 'ft') headers['X-Device-Id'] = deviceId()
   let res
   try {
     res = await fetch(`/proxy/${base}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       ...options,
       body,
     })
@@ -69,6 +72,25 @@ export const PERSONAS = {
   'ft-u-004': '재판매 응모자 (추첨 확인용)',
   'ft-u-005': '재판매 응모자 (추첨 확인용)',
   'ft-u-bot': '매크로 시연용 계정',
+}
+
+/**
+ * 이 브라우저의 기기 ID. 처음 한 번 만들어 저장한다 (시크릿 창이나 다른 브라우저는 다른 기기로 보임).
+ * 실서비스 앱이라면 설치된 기기의 ID 를 쓴다.
+ */
+let memoryDeviceId = null
+export function deviceId() {
+  try {
+    let id = localStorage.getItem('ft-device-id')
+    if (!id) {
+      id = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`).toString()
+      localStorage.setItem('ft-device-id', id)
+    }
+    return id
+  } catch {
+    memoryDeviceId ??= `${Date.now()}-${Math.random()}`
+    return memoryDeviceId
+  }
 }
 
 /** 예매처별 로그인 회원 기억 (브라우저 저장소가 막혀도 동작) */
