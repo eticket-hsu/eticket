@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fairticket.vendor.api.TicketView;
 import com.fairticket.vendor.domain.AdmitResult;
 import com.fairticket.vendor.domain.QrCodec;
+import com.fairticket.vendor.domain.Ticket;
 import com.fairticket.vendor.domain.TicketService;
 
 import jakarta.validation.constraints.NotBlank;
@@ -63,6 +64,22 @@ public class FtStandardApiController {
 	@PostMapping("/tickets/{id}/reissue")
 	public TicketView reissue(@PathVariable Long id, @RequestBody ReissueRequest req) {
 		return TicketView.of(ticketService.reissue(id, req.newOwnerFtUid(), req.acquiredPrice()), qrCodec);
+	}
+
+	/** reason: FairTicket 사후 검토에서 겹친 신호 (예: "여러 예매처에서 같은 공연 시도, 사람이 어려운 반응 속도") */
+	public record FraudCancelRequest(String reason) {
+	}
+
+	/**
+	 * 부정 구매 취소 요청. FairTicket 이 사후 검토로 찾은 의심 계정의 표를 발행처가 취소한다.
+	 * 대금은 환불(시연: 로그만)하고, 이후 QR 은 입장에서 거절된다.
+	 */
+	@PostMapping("/tickets/{id}/fraud-cancel")
+	public TicketView fraudCancel(@PathVariable Long id, @RequestBody FraudCancelRequest req) {
+		Ticket t = ticketService.cancelForFraud(id, req.reason());
+		log.info("[부정 구매 취소] 티켓 {} ({}) 사유: {} → 대금 {}원 환불", id, t.getOwner().getFtUid(), req.reason(),
+				t.getAcquiredPrice());
+		return TicketView.of(t, qrCodec);
 	}
 
 	public record AdmitRequest(@NotBlank String qr) {

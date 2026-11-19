@@ -111,6 +111,7 @@ export const TICKET_STATUS = {
   LOCKED: { label: '재판매 진행 중', tone: 'warn' },
   USED: { label: '입장 완료', tone: 'info' },
   VOID: { label: '무효', tone: 'bad' },
+  FRAUD_CANCELLED: { label: '부정 구매로 취소', tone: 'bad' },
 }
 
 export const RESALE_STATUS = {
