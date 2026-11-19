@@ -98,7 +98,8 @@ export default function MyTickets() {
                 <i />
               </div>
               <div className="mticket-qr">
-                <div className={`qr-box ${locked || fraud ? 'locked' : ''}`} onClick={() => !locked && !fraud && setQrOf(t)}>
+                {/* 사용 정지·취소된 표도 QR 은 열어 볼 수 있다 (캡처해 둔 QR 로 입장을 시도해도 막히는지 확인용) */}
+                <div className={`qr-box ${locked || fraud ? 'locked' : ''}`} onClick={() => setQrOf(t)}>
                   <QRCodeSVG value={t.qr} size={104} />
                   {locked && (
                     <div className="qr-over">
@@ -124,6 +125,7 @@ export default function MyTickets() {
                   {fraud ? (
                     <>
                       부정 구매로 취소되어 입장할 수 없습니다. 대금은 환불됩니다.
+                      <span className="tiny muted" style={{ display: 'block', marginTop: 4 }}>QR을 누르면 내용을 볼 수 있어요 (입장 검증 시연용)</span>
                       {t.cancelReason && <span className="tiny muted" style={{ display: 'block', marginTop: 4 }}>근거: {t.cancelReason}</span>}
                     </>
                   ) : locked ? (
@@ -187,6 +189,17 @@ function QrModal({ ticket, onClose }) {
   return (
     <Modal title="입장 QR" onClose={onClose}>
       <div className="center">
+        {ticket.status !== 'VALID' && (
+          <div className="badge bad" style={{ display: 'flex', justifyContent: 'center', height: 'auto', padding: '10px 12px', marginBottom: 14, borderRadius: 10, whiteSpace: 'normal' }}>
+            {ticket.status === 'FRAUD_CANCELLED'
+              ? '부정 구매로 취소된 표입니다. 이 QR로는 입장할 수 없습니다'
+              : ticket.status === 'LOCKED'
+                ? '재판매 진행 중이라 이 QR로는 입장할 수 없습니다'
+                : ticket.status === 'USED'
+                  ? '이미 입장한 표입니다'
+                  : '사용할 수 없는 표입니다'}
+          </div>
+        )}
         <div style={{ display: 'inline-block', padding: 16, background: '#fff', borderRadius: 16, border: '1px solid var(--line)' }}>
           <QRCodeSVG value={ticket.qr} size={240} />
         </div>
