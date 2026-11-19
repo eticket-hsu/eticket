@@ -1,5 +1,6 @@
 // Scenario check for confirmed rules A (공통 구매 한도) and B (공식 재판매).
 import { call as scall, AS } from './sign.mjs'
+import { localDateTime } from './time.mjs'
 const FT = 'http://localhost:8080', STAR = 'http://localhost:8081', MOON = 'http://localhost:8082'
 const V = { star: STAR, moon: MOON }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -120,9 +121,9 @@ const moonPerf3 = (await call('GET', `${MOON}/api/performances`)).data.find((p) 
 r = await buyIn('moon', moonPerf3.id, id('moon', 'ft-u-003'))
 r = await call('POST', `${MOON}/api/tickets/${r.data.ticket.id}/resale`, { memberId: id('moon', 'ft-u-003') })
 check('발행처가 정한 결제 기한 15분 적용 (달티켓 PERF-003)', r.data?.paymentMinutes === 15, `${r.data?.paymentMinutes}`)
-const soon = new Date(Date.now() + 2 * 3600e3 + 9 * 3600e3).toISOString().slice(0, 19)
+const soon = localDateTime(Date.now() + 2 * 3600e3)
 r = await scall('POST', `${FT}/v1/resales`, { vendorId: 'star', vendorTicketId: 1, performanceCode: 'PERF-001', sellerUid: 'x', price: 1, startsAt: soon }, { signAs: AS.star })
-check('공연 24시간 이내 신청 거절 (기본 신청 마감)', r.status === 409 && /마감/.test(r.data?.error), r.data?.error)
+check('공연 2시간 전 신청 거절 (기본 신청 마감)', r.status === 409 && /마감/.test(r.data?.error), r.data?.error)
 
 console.log(`\n${fails === 0 ? 'ALL PASS' : fails + ' FAILED'}`)
 process.exit(fails ? 1 : 0)
