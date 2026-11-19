@@ -540,11 +540,17 @@ function Tools({ failReissue, setFailReissue }) {
               <button className="btn danger" disabled={busy} onClick={() => run('macro')}>
                 <Bot size={16} /> 매크로 공격
               </button>
+              <button className="btn danger" disabled={busy} onClick={() => run('vpn')}>
+                VPN·데이터센터 접속
+              </button>
               <button className="btn danger" disabled={busy} onClick={() => run('ring')}>
                 분산 매크로 (계정 묶음)
               </button>
               <button className="btn dark" disabled={busy} onClick={() => run('buy')}>
                 매크로봇 실제 구매 시도
+              </button>
+              <button className="btn danger" disabled={busy} onClick={() => run('scalper')}>
+                암표상 실제 구매 (사후 검토용)
               </button>
             </div>
             {log && <div className="log">{log}</div>}

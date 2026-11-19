@@ -4,8 +4,8 @@ import { api } from '../api.js'
 
 const PERF = 'PERF-001'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
-const event = (vendorId, uid, result, ip, reactionMs) =>
-  api.post('ft', '/v1/demo/purchase-events', { vendorId, uid, performanceCode: PERF, action: 'PURCHASE', result, ip, reactionMs })
+const event = (vendorId, uid, result, ip, reactionMs, clientTimezone = 'Asia/Seoul') =>
+  api.post('ft', '/v1/demo/purchase-events', { vendorId, uid, performanceCode: PERF, action: 'PURCHASE', result, ip, reactionMs, clientTimezone })
 
 async function report(uid, log) {
   const r = await api.get('ft', `/v1/demo/risk?uid=${uid}&performanceCode=${PERF}`)
@@ -45,6 +45,15 @@ export async function runTraffic(kind, log) {
     await report('ft-u-bot', log)
     return
   }
+  if (kind === 'vpn') {
+    log('VPN 사용자(서연): 사람 속도로 예매하지만 VPN·데이터센터 IP로 접속, 브라우저 시간대는 한국')
+    await event('star', 'ft-u-003', 'ATTEMPT', '198.18.0.77', 2600)
+    await sleep(800)
+    await event('moon', 'ft-u-003', 'ATTEMPT', '192.0.2.40', 2300)
+    await report('ft-u-003', log)
+    log('→ VPN·데이터센터 IP와 시간대 불일치가 겹쳐 주의 이상. 발행처가 차단 정책을 켜면 바로 보류됩니다')
+    return
+  }
   if (kind === 'ring') {
     log('분산 매크로(계정 묶음): 가짜 계정 5개가 IP 2개를 돌려 쓰며 별티켓·달티켓에 나눠 시도')
     const ips = ['198.51.100.21', '198.51.100.22']
@@ -55,6 +64,36 @@ export async function runTraffic(kind, log) {
     }
     await report('ft-u-ring-0', log)
     log('→ 개별 점수는 낮아도 사후 검토 탭에서 여러 예매처에 걸친 계정 묶음으로 드러납니다')
+    return
+  }
+  if (kind === 'scalper') {
+    // 암표상: 좌석 화면 없이 두 예매처에서 연달아 실제 구매. 보안문자는 풀이 대행으로 통과시킴
+    log('암표상(매크로봇)이 별티켓·달티켓에서 NEON WAVE를 화면 없이 연달아 구매합니다')
+    const buyAt = async (vendor) => {
+      const members = await api.get(vendor, '/api/members')
+      const bot = members.find((m) => m.ftUid === 'ft-u-bot')
+      const perf = (await api.get(vendor, '/api/performances')).find((p) => p.code === PERF)
+      const url = `/api/performances/${perf.id}/purchase`
+      try {
+        return await api.post(vendor, url, { memberId: bot.id })
+      } catch (e) {
+        if (!e.data?.captchaRequired) throw e
+        const c = await api.get('ft', '/v1/captcha')
+        const a = await api.get('ft', `/v1/demo/captcha/${c.id}`)
+        log(`   ${vendor === 'star' ? '별티켓' : '달티켓'}이 보안문자 요구 → 풀이 대행으로 통과`)
+        return await api.post(vendor, url, { memberId: bot.id, captchaId: c.id, captchaAnswer: a.answer })
+      }
+    }
+    for (const vendor of ['star', 'moon', 'star', 'moon', 'star']) {
+      const name = vendor === 'star' ? '별티켓' : '달티켓'
+      try {
+        const r = await buyAt(vendor)
+        log(`→ ${name} 구매 성공: ${r.ticket.seat}`)
+      } catch (e) {
+        log(`→ ${name} 실패: ${e.data?.quotaExceeded ? '공통 구매 한도 초과' : e.data?.held ? '구매 보류(고위험)' : e.message}`)
+      }
+    }
+    log('→ 예매 단계에서는 표 일부를 가져갔습니다. 사후 검토 탭에서 의심 계정으로 찾아 표를 취소해 보세요')
     return
   }
   if (kind === 'buy') {

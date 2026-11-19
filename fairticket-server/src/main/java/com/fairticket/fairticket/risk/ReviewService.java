@@ -12,6 +12,8 @@ import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.springframework.stereotype.Service;
+
+import com.fairticket.fairticket.quota.QuotaService;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -25,15 +27,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReviewService {
 
 	private final PurchaseEventRepository events;
+	private final QuotaService quota;
 	private final List<Report> reports = new CopyOnWriteArrayList<>();
 
-	public ReviewService(PurchaseEventRepository events) {
+	public ReviewService(PurchaseEventRepository events, QuotaService quota) {
 		this.events = events;
+		this.quota = quota;
 	}
 
 	public record Suspect(String uid, List<String> vendors, int attempts, int successes, int failures,
 			int quotaHits, int captchaFails, Integer fastestReactionMs, int noViewRequests, int sharedIpAccounts,
-			List<String> flags) {
+			List<String> flags, List<String> heldTickets) {
 	}
 
 	/** suspiciousMembers: IP 외의 행동 신호가 있는 계정 수 */
@@ -71,6 +75,7 @@ public class ReviewService {
 			int attempts = 0, successes = 0, failures = 0, quotaHits = 0, captchaFails = 0, noView = 0, deviceMoves = 0;
 			Integer fastest = null;
 			int sharedIp = 1;
+			boolean anonymousIp = false;
 			for (PurchaseEvent e : list) {
 				vendors.add(e.getVendorId());
 				switch (e.getResult()) {
@@ -96,6 +101,9 @@ public class ReviewService {
 				if (e.getIpHash() != null) {
 					sharedIp = Math.max(sharedIp, uidsByIp.get(e.getIpHash()).size());
 				}
+				if (e.getIpType() != null && IpIntelligence.IpType.valueOf(e.getIpType()).anonymous()) {
+					anonymousIp = true;
+				}
 			}
 			List<String> flags = new ArrayList<>();
 			if (vendors.size() >= 2) {
@@ -117,6 +125,9 @@ public class ReviewService {
 			if (deviceMoves >= 2) {
 				flags.add("표를 다른 기기로 " + deviceMoves + "회 옮김");
 			}
+			if (anonymousIp) {
+				flags.add("VPN·데이터센터 IP 사용");
+			}
 			behaviorSignals.put(uid, flags.size()); // IP 신호를 넣기 전 = 행동 신호 수
 			if (sharedIp >= RiskService.SHARED_IP_ACCOUNTS) {
 				flags.add("같은 IP 계정 " + sharedIp + "개");
@@ -124,7 +135,7 @@ public class ReviewService {
 			// 한 가지 신호만으로는 의심 목록에 올리지 않는다
 			if (flags.size() >= 2) {
 				suspects.add(new Suspect(uid, List.copyOf(vendors), attempts, successes, failures, quotaHits,
-						captchaFails, fastest, noView, sharedIp, flags));
+						captchaFails, fastest, noView, sharedIp, flags, quota.heldTickets(uid, performanceCode)));
 			}
 		});
 		suspects.sort(Comparator.comparingInt((Suspect s) -> s.flags().size()).reversed()

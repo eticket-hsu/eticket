@@ -101,7 +101,9 @@ public class PublicApiController {
 	 * seat 를 비우면 빈 좌석 자동 배정.
 	 * captchaId/captchaAnswer 는 FairTicket 보안문자를 통과해 다시 요청할 때 채운다.
 	 */
-	public record PurchaseRequest(@NotNull Long memberId, String seat, String captchaId, String captchaAnswer) {
+	/** timezone: 브라우저 시간대. IP 위치와 비교해 VPN 사용을 찾는 데 쓴다 */
+	public record PurchaseRequest(@NotNull Long memberId, String seat, String captchaId, String captchaAnswer,
+			String timezone) {
 	}
 
 	/**
@@ -121,7 +123,7 @@ public class PublicApiController {
 		// 보안문자를 들고 다시 온 요청은 같은 시도로 보고 다시 세지 않는다
 		if (!retryWithCaptcha) {
 			fairTicket.reportPurchaseAttempt(uid, perf.getCode(), "ATTEMPT", ip,
-					viewTracker.reactionMs(member.getId(), id));
+					viewTracker.reactionMs(member.getId(), id), req.timezone());
 		}
 		FairTicketClient.RiskResponse risk = fairTicket.getRisk(uid, perf.getCode());
 		String level = risk == null ? "LOW" : risk.riskLevel();
@@ -263,7 +265,12 @@ public class PublicApiController {
 	 * 접속 IP. 시연에서는 한 노트북에서 여러 사람을 흉내 내므로 모두 127.0.0.1 이 되어
 	 * "같은 IP 계정"으로 잘못 묶인다. 로컬 접속이면 회원마다 가상 IP 를 쓴다 (시연 전용).
 	 */
-	private static String clientIp(HttpServletRequest http, Member member) {
+	private String clientIp(HttpServletRequest http, Member member) {
+		// 시연용: 화면에서 고른 접속 위치(해외·VPN 등)의 IP 를 쓴다. 실서비스(demo-mode: false)에서는 무시
+		String demoIp = http.getHeader("X-Demo-Client-Ip");
+		if (props.demoMode() && demoIp != null && demoIp.matches("[0-9a-fA-F:.]{3,45}")) {
+			return demoIp;
+		}
 		String ip = http.getRemoteAddr();
 		boolean local = ip == null || ip.startsWith("127.") || ip.equals("0:0:0:0:0:0:0:1") || ip.equals("::1");
 		return local ? "10.0.0." + (member.getId() % 250 + 1) : ip;

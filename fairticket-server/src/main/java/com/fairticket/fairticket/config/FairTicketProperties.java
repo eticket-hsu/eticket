@@ -13,7 +13,18 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @ConfigurationProperties(prefix = "fairticket")
 public record FairTicketProperties(Map<String, Vendor> vendors, int reissueMaxAttempts,
-		ResaleDefaults resaleDefaults, boolean demoMode) {
+		ResaleDefaults resaleDefaults, boolean demoMode, IpPolicy ipPolicy) {
+
+	/**
+	 * @param blockAnonymous true 면 VPN·프록시·데이터센터·Tor IP 에서 온 예매는 점수와 상관없이 고위험(보류).
+	 *                       false 면 위험 점수에만 반영 (기본값: 해외 거주 팬·회사 VPN 오탐을 줄이기 위해)
+	 */
+	public record IpPolicy(boolean blockAnonymous) {
+	}
+
+	public boolean blockAnonymousIp() {
+		return ipPolicy != null && ipPolicy.blockAnonymous();
+	}
 
 	/**
 	 * @param outboundSecret FairTicket → 이 발행처 요청에 서명하는 비밀키

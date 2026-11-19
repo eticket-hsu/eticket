@@ -35,13 +35,21 @@ public class PurchaseEvent {
 	/** IP 원문은 저장하지 않는다 */
 	private String ipHash;
 
+	/** IP 종류 (IpIntelligence.IpType). 원래 IP 대신 종류만 남긴다 */
+	private String ipType;
+
+	/** 브라우저 시간대 (예: Asia/Seoul). IP 위치와 다르면 VPN 신호 */
+	private String clientTimezone;
+
 	private LocalDateTime occurredAt = LocalDateTime.now();
 
 	protected PurchaseEvent() {
 	}
 
 	public PurchaseEvent(String vendorId, String uid, String performanceCode, String action, String result,
-			String ipHash, Integer reactionMs) {
+			String ipHash, Integer reactionMs, String ipType, String clientTimezone) {
+		this.ipType = ipType;
+		this.clientTimezone = clientTimezone;
 		this.vendorId = vendorId;
 		this.uid = uid;
 		this.performanceCode = performanceCode;
@@ -73,6 +81,14 @@ public class PurchaseEvent {
 
 	public String getResult() {
 		return result;
+	}
+
+	public String getIpType() {
+		return ipType;
+	}
+
+	public String getClientTimezone() {
+		return clientTimezone;
 	}
 
 	public String getIpHash() {

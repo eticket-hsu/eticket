@@ -8,6 +8,7 @@ public enum AdmitResult {
 	OUTDATED_VERSION("재발급으로 무효가 된 티켓"),
 	EXPIRED_QR("만료된 QR (화면 캡처 의심)"),
 	VOIDED("무효 처리된 티켓"),
+	FRAUD_CANCELLED("부정 구매로 취소된 티켓"),
 	INVALID_SIGNATURE("위조 의심 QR"),
 	WRONG_VENDOR("다른 발행처의 QR"),
 	NOT_FOUND("존재하지 않는 티켓");

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Check, ShieldAlert, ShieldCheck, Info, Ban, KeyRound, Smartphone } from 'lucide-react'
-import { api } from '../api.js'
+import { api, browserTimezone } from '../api.js'
 import { Modal, Poster, RISK, dateLabel, usePolling, won } from '../components/ui.jsx'
 import Captcha from '../components/Captcha.jsx'
 import { useVendor } from './VendorApp.jsx'
@@ -38,7 +38,7 @@ export default function PerformanceDetail() {
     setFlow({ step: 1 })
     const wait = (ms) => new Promise((r) => setTimeout(r, ms))
     try {
-      const call = api.post(vendorId, `/api/performances/${p.id}/purchase`, { memberId: me.id, seat, ...extra })
+      const call = api.post(vendorId, `/api/performances/${p.id}/purchase`, { memberId: me.id, seat, timezone: browserTimezone(), ...extra })
       await wait(700)
       setFlow({ step: 2 })
       const [res] = await Promise.all([call, wait(900)])

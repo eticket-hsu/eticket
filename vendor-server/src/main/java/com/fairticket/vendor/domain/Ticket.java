@@ -51,6 +51,9 @@ public class Ticket {
 	/** 다른 기기로 옮긴 횟수. 잦으면 계정 양도 의심 신호 */
 	private int deviceChanges;
 
+	/** 부정 구매 취소 사유 (FairTicket 사후 검토 근거) */
+	private String cancelReason;
+
 	protected Ticket() {
 	}
 
@@ -108,6 +111,23 @@ public class Ticket {
 
 	public int getDeviceChanges() {
 		return deviceChanges;
+	}
+
+	/**
+	 * 부정 구매 취소. 사용 가능한 표만 취소한다.
+	 * 재판매 진행 중이면 재판매를 먼저 정리해야 하고, 이미 입장한 표는 취소할 수 없다.
+	 */
+	public void cancelForFraud(String reason) {
+		if (status == TicketStatus.FRAUD_CANCELLED) {
+			return;
+		}
+		requireStatus(TicketStatus.VALID);
+		this.status = TicketStatus.FRAUD_CANCELLED;
+		this.cancelReason = reason;
+	}
+
+	public String getCancelReason() {
+		return cancelReason;
 	}
 
 	/** 재판매 가격 상한 = min(최초가, 현재 소유자 취득가). 싸게 사서 비싸게 되파는 차익을 막는다. */
