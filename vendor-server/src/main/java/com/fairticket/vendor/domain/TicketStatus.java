@@ -9,5 +9,7 @@ public enum TicketStatus {
 	/** 입장 완료 */
 	USED,
 	/** 환불 등으로 무효 */
-	VOID
+	VOID,
+	/** 부정 구매(매크로·암표)로 발행처가 취소. 입장 불가, 대금은 환불 */
+	FRAUD_CANCELLED
 }
