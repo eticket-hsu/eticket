@@ -1,11 +1,13 @@
 // Scenario check for confirmed rules A (공통 구매 한도) and B (공식 재판매).
 import { call as scall, AS } from './sign.mjs'
 import { localDateTime } from './time.mjs'
+// 회원마다 다른 기기에서 접속하는 것처럼 (본문 memberId 나 주소의 회원 번호로 정함)
+const e2eDevice = (url, body) => `e2e-${body?.memberId ?? String(url).match(/members\/(\d+)/)?.[1] ?? 'x'}`
 const FT = 'http://localhost:8080', STAR = 'http://localhost:8081', MOON = 'http://localhost:8082'
 const V = { star: STAR, moon: MOON }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 async function call(method, url, body) {
-  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-Device-Id': 'e2e-device' }, body: body && JSON.stringify(body) })
+  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-Device-Id': e2eDevice(url, body) }, body: body && JSON.stringify(body) })
   const t = await res.text()
   let data = null
   try { data = t ? JSON.parse(t) : null } catch { data = t }

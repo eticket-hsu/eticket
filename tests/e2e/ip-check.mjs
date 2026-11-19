@@ -1,9 +1,11 @@
 // IP 검사: 해외·VPN·데이터센터 IP와 브라우저 시간대 불일치
 // 시연용 대역은 fairticket-server/src/main/resources/ip-ranges.csv 참고
+// 회원마다 다른 기기에서 접속하는 것처럼 (본문 memberId 나 주소의 회원 번호로 정함)
+const e2eDevice = (url, body) => `e2e-${body?.memberId ?? String(url).match(/members\/(\d+)/)?.[1] ?? 'x'}`
 const FT = 'http://localhost:8080', STAR = 'http://localhost:8081'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 async function call(method, url, body, headers = {}) {
-  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-Device-Id': 'e2e-device', ...headers }, body: body && JSON.stringify(body) })
+  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-Device-Id': e2eDevice(url, body), ...headers }, body: body && JSON.stringify(body) })
   const t = await res.text()
   let data = null
   try { data = t ? JSON.parse(t) : null } catch { data = t }

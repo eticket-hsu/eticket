@@ -17,7 +17,8 @@ import com.fairticket.vendor.config.VendorProperties;
  * 계속 바뀌는 QR: "FT:{발행처ID}:{티켓ID}:{발급버전}:{시간칸}.{서명}".
  *
  * 시간칸 = 현재 시각(초) / 30. 30초마다 QR 내용이 바뀐다.
- * 입장 검증은 지금 칸과 바로 앞 칸만 받으므로, 화면을 캡처한 QR 은 1분이 지나면 거절된다.
+ * 입장 검증은 지금 칸만 받고, 바로 앞 칸은 칸이 바뀐 뒤 10초까지만 받는다 (화면 갱신·네트워크 지연 여유).
+ * 그래서 화면을 캡처한 QR 은 길어야 40초 뒤에 거절된다.
  * 서명은 발행처 비밀키로 만든 HMAC-SHA256 이라 시간칸을 고쳐 쓸 수 없다 (티켓마스터 SafeTix 와 같은 방식).
  *
  * 예전 고정 QR("FT:{발행처}:{티켓}:{버전}.{서명}")도 읽기는 하지만, 시간칸이 없으므로 만료로 처리한다.
@@ -27,8 +28,8 @@ public class QrCodec {
 
 	/** QR 이 바뀌는 간격(초) */
 	public static final int WINDOW_SECONDS = 30;
-	/** 지금 칸보다 몇 칸 전까지 받나. 1이면 최대 약 60초 전 QR 까지 (화면 갱신·네트워크 지연 여유) */
-	public static final int ACCEPT_PAST_WINDOWS = 1;
+	/** 칸이 바뀐 뒤 바로 앞 칸 QR 을 몇 초까지 더 받나 (화면 갱신·네트워크 지연 여유). QR 한 장의 수명 = 30 + 10초 */
+	public static final int GRACE_SECONDS = 10;
 
 	private final VendorProperties props;
 
@@ -57,13 +58,18 @@ public class QrCodec {
 
 	/** 이 시간칸의 QR 이 입장에서 더는 받아지지 않는 시각 (epoch ms) */
 	public static long expiresAtMillis(long window) {
-		return (window + 1 + ACCEPT_PAST_WINDOWS) * WINDOW_SECONDS * 1000L;
+		return ((window + 1) * WINDOW_SECONDS + GRACE_SECONDS) * 1000L;
 	}
 
 	/** 지금 입장에 쓸 수 있는 시간칸인지 (시계 오차로 한 칸 앞선 것도 허용) */
 	public static boolean fresh(long window) {
-		long now = currentWindow();
-		return window >= now - ACCEPT_PAST_WINDOWS && window <= now + 1;
+		long nowSec = Instant.now().getEpochSecond();
+		long now = nowSec / WINDOW_SECONDS;
+		if (window == now || window == now + 1) {
+			return true;
+		}
+		// 바로 앞 칸은 칸이 바뀐 직후 잠깐만
+		return window == now - 1 && nowSec % WINDOW_SECONDS < GRACE_SECONDS;
 	}
 
 	/** 형식이 틀리면 null. 서명 검증 결과는 validSignature 로 돌려준다. 고정 QR 은 window 가 null */

@@ -16,8 +16,15 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param ftOutboundSecret 이 예매처 → FairTicket 요청에 서명하는 비밀키
  * @param ftInboundSecrets FairTicket → 이 예매처 요청의 서명을 확인하는 비밀키 목록 (키 교체 중에는 2개)
  * @param demoMode         시연용 기능(접속 위치 바꾸기 등). 실서비스에서는 false
+ * @param deviceMoveCutoffHours 공연 몇 시간 전부터 표를 다른 기기로 못 옮기게 할지 (기본 24).
+ *                         암표 거래는 공연 직전에 몰리므로, 그때는 현장 신분증 확인으로만 처리한다
  */
 @ConfigurationProperties(prefix = "vendor")
 public record VendorProperties(String id, String name, String qrSecret, String fairticketUrl, String seatRows,
-		int paymentHoldMinutes, String ftOutboundSecret, List<String> ftInboundSecrets, boolean demoMode) {
+		int paymentHoldMinutes, String ftOutboundSecret, List<String> ftInboundSecrets, boolean demoMode,
+		Integer deviceMoveCutoffHours) {
+
+	public int moveCutoffHours() {
+		return deviceMoveCutoffHours == null ? 24 : deviceMoveCutoffHours;
+	}
 }

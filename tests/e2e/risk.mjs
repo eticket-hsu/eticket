@@ -1,8 +1,10 @@
 // C묶음 확정 규칙 확인: 위험 규칙 7개, 등급별 조치(보안문자/본인인증), 재판매 응모 제한, 사후 검토·계정 묶음
+// 회원마다 다른 기기에서 접속하는 것처럼 (본문 memberId 나 주소의 회원 번호로 정함)
+const e2eDevice = (url, body) => `e2e-${body?.memberId ?? String(url).match(/members\/(\d+)/)?.[1] ?? 'x'}`
 const FT = 'http://localhost:8080', STAR = 'http://localhost:8081', MOON = 'http://localhost:8082'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 async function call(method, url, body) {
-  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-Device-Id': 'e2e-device' }, body: body && JSON.stringify(body) })
+  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-Device-Id': e2eDevice(url, body) }, body: body && JSON.stringify(body) })
   const t = await res.text(); let data = null; try { data = t ? JSON.parse(t) : null } catch { data = t }
   return { status: res.status, data }
 }

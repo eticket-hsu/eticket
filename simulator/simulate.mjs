@@ -49,7 +49,8 @@ async function botTriesToBuy() {
   const perf = (await (await fetch(`${VENDOR.star}/api/performances`)).json())[0]
   const res = await fetch(`${VENDOR.star}/api/performances/${perf.id}/purchase`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    // 기기 정보가 없으면 예매처가 바로 거절하므로, 위험 등급에 따른 보류를 보려고 기기 ID 를 붙인다
+    headers: { 'Content-Type': 'application/json', 'X-Device-Id': 'sim-bot-device' },
     body: JSON.stringify({ memberId: bot.id }),
   })
   console.log(`▶ 매크로봇 별티켓 구매 시도 → HTTP ${res.status}`, (await res.json()).message ?? '')

@@ -10,7 +10,8 @@ import jakarta.persistence.Table;
 
 /** 예매처가 보내는 구매 시도 이벤트. 위험 분석의 입력이다. */
 @Entity
-@Table(indexes = { @Index(columnList = "uid,occurredAt"), @Index(columnList = "ipHash,occurredAt") })
+@Table(indexes = { @Index(columnList = "uid,occurredAt"), @Index(columnList = "ipHash,occurredAt"),
+		@Index(columnList = "deviceHash,occurredAt") })
 public class PurchaseEvent {
 
 	@Id
@@ -41,13 +42,17 @@ public class PurchaseEvent {
 	/** 브라우저 시간대 (예: Asia/Seoul). IP 위치와 다르면 VPN 신호 */
 	private String clientTimezone;
 
+	/** 예매처가 보낸 기기 ID 해시. 한 기기를 여러 계정이 쓰는지 본다 */
+	private String deviceHash;
+
 	private LocalDateTime occurredAt = LocalDateTime.now();
 
 	protected PurchaseEvent() {
 	}
 
 	public PurchaseEvent(String vendorId, String uid, String performanceCode, String action, String result,
-			String ipHash, Integer reactionMs, String ipType, String clientTimezone) {
+			String ipHash, Integer reactionMs, String ipType, String clientTimezone, String deviceHash) {
+		this.deviceHash = deviceHash;
 		this.ipType = ipType;
 		this.clientTimezone = clientTimezone;
 		this.vendorId = vendorId;
@@ -85,6 +90,10 @@ public class PurchaseEvent {
 
 	public String getIpType() {
 		return ipType;
+	}
+
+	public String getDeviceHash() {
+		return deviceHash;
 	}
 
 	public String getClientTimezone() {

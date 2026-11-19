@@ -1,5 +1,6 @@
 package com.fairticket.vendor.api;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -120,10 +121,19 @@ public class PublicApiController {
 		String ip = clientIp(http, member);
 		boolean retryWithCaptcha = req.captchaId() != null;
 
+		// 표는 산 기기에 바로 묶는다. 기기 정보 없이 API 를 직접 부르는 매크로는 표를 아무 기기에도
+		// 묶지 않은 채 계정만 넘기려 하므로, 기기 정보가 없으면 팔지 않는다 (그 시도는 위험 신호로 기록)
+		if (deviceId == null || deviceId.isBlank()) {
+			fairTicket.reportPurchaseAttempt(uid, perf.getCode(), "NO_DEVICE", ip);
+			return ResponseEntity.badRequest()
+				.body(Map.of("error", "기기 정보가 없습니다. 예매처 앱이나 웹사이트에서 예매해 주세요"));
+		}
+		String device = deviceHash(deviceId);
+
 		// 보안문자를 들고 다시 온 요청은 같은 시도로 보고 다시 세지 않는다
 		if (!retryWithCaptcha) {
 			fairTicket.reportPurchaseAttempt(uid, perf.getCode(), "ATTEMPT", ip,
-					viewTracker.reactionMs(member.getId(), id), req.timezone());
+					viewTracker.reactionMs(member.getId(), id), req.timezone(), device);
 		}
 		FairTicketClient.RiskResponse risk = fairTicket.getRisk(uid, perf.getCode());
 		String level = risk == null ? "LOW" : risk.riskLevel();
@@ -168,8 +178,9 @@ public class PublicApiController {
 		}
 		fairTicket.confirmQuota(quota.id(), t.getId());
 		viewTracker.clear(member.getId(), id);
-		fairTicket.reportPurchaseAttempt(uid, perf.getCode(), "SUCCESS", ip);
+		fairTicket.reportPurchaseAttempt(uid, perf.getCode(), "SUCCESS", ip, null, null, device);
 		// 산 기기에 표를 묶는다 (이 기기에서만 QR 이 보임)
+		ticketService.bindOrMatch(t.getId(), device);
 		return ResponseEntity.ok(Map.of("ticket", viewFor(t, deviceId), "risk", risk == null ? "UNKNOWN" : risk,
 				"level", level, "quotaChecked", !quota.unavailable()));
 	}
@@ -190,7 +201,8 @@ public class PublicApiController {
 	/**
 	 * 표를 이 기기로 옮기기. 폰을 바꾸거나 잃어버린 주인을 위해 본인인증을 거쳐 옮긴다.
 	 * 계정을 통째로 넘겨받은 사람은 주인 명의 본인인증을 통과할 수 없으므로 옮길 수 없다.
-	 * 옮긴 기록은 FairTicket 에 보내 사후 검토의 계정 양도 의심 신호로 쓴다.
+	 * 옮긴 기록(새 기기 해시 포함)은 FairTicket 에 보내 사후 검토의 계정 양도 의심 신호로 쓴다.
+	 * 공연 직전(기본 24시간 전)에는 옮길 수 없다: 암표 거래가 몰리는 때라 현장 신분증 확인으로 처리한다.
 	 */
 	@PostMapping("/tickets/{id}/device")
 	public ResponseEntity<?> moveDevice(@PathVariable Long id, @RequestBody DeviceMoveRequest req,
@@ -198,13 +210,21 @@ public class PublicApiController {
 		if (deviceId == null || deviceId.isBlank()) {
 			return ResponseEntity.badRequest().body(Map.of("error", "기기 정보가 없습니다"));
 		}
+		Ticket ticket = ticketService.get(id);
+		int cutoff = props.moveCutoffHours();
+		if (cutoff > 0 && LocalDateTime.now().isAfter(ticket.getPerformance().getStartsAt().minusHours(cutoff))) {
+			return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(Map.of("error", "공연 " + cutoff + "시간 전부터는 표를 다른 기기로 옮길 수 없습니다. "
+						+ "폰을 잃어버렸다면 공연장 매표소에서 신분증으로 확인받아 주세요", "moveClosed", true));
+		}
 		if (!identity.verify(req.memberId(), req.code())) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "본인인증 번호가 맞지 않습니다"));
 		}
-		Ticket t = ticketService.moveToDevice(id, req.memberId(), deviceHash(deviceId));
+		String device = deviceHash(deviceId);
+		Ticket t = ticketService.moveToDevice(id, req.memberId(), device);
 		Member member = members.findById(req.memberId()).orElseThrow();
 		fairTicket.reportPurchaseAttempt(member.getFtUid(), t.getPerformance().getCode(), "DEVICE_CHANGE",
-				clientIp(http, member));
+				clientIp(http, member), null, null, device);
 		return ResponseEntity.ok(viewFor(ticketService.get(id), deviceId));
 	}
 

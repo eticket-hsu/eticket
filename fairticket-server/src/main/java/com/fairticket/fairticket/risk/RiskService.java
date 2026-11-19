@@ -40,6 +40,8 @@ public class RiskService {
 	static final int FAILURE_LIMIT = 5;
 	/** 한 IP 에서 움직인 계정 수 10분 기준 (보조 신호) */
 	static final int SHARED_IP_ACCOUNTS = 5;
+	/** 한 기기에서 10분 안에 몇 개 계정이 시도하면 신호인가. 가족이 한 폰으로 2개 계정 정도는 흔하므로 3부터 */
+	static final int SHARED_DEVICE_ACCOUNTS = 3;
 
 	/** IP 신호 점수 */
 	static final int VPN_POINTS = 25, DATACENTER_POINTS = 25, TOR_POINTS = 40, FOREIGN_POINTS = 10,
@@ -47,7 +49,8 @@ public class RiskService {
 	static final String KOREA_TIMEZONE = "Asia/Seoul";
 
 	/** 반복 실패에 세는 결과. 한도 초과(QUOTA)는 별도 규칙으로 세므로 중복해서 넣지 않는다 */
-	static final Set<String> FAILURES = Set.of("FAIL", "HELD", "CAPTCHA_FAIL");
+	/** NO_DEVICE: 기기 정보 없이 API 를 직접 부른 구매 요청 (예매처가 거절) */
+	static final Set<String> FAILURES = Set.of("FAIL", "HELD", "CAPTCHA_FAIL", "NO_DEVICE");
 
 	private final PurchaseEventRepository events;
 	private final IpIntelligence ipIntel;
@@ -61,14 +64,16 @@ public class RiskService {
 
 	public PurchaseEvent record(String vendorId, String uid, String performanceCode, String action, String result,
 			String ip, Integer reactionMs) {
-		return record(vendorId, uid, performanceCode, action, result, ip, reactionMs, null);
+		return record(vendorId, uid, performanceCode, action, result, ip, reactionMs, null, null);
 	}
 
 	/** 원래 IP 는 저장하지 않는다: 같은 IP 묶기용 해시와, 판별한 IP 종류만 남긴다 */
 	public PurchaseEvent record(String vendorId, String uid, String performanceCode, String action, String result,
-			String ip, Integer reactionMs, String clientTimezone) {
+			String ip, Integer reactionMs, String clientTimezone, String deviceHash) {
+		// 예매처가 이미 해시로 바꿔 보내지만, 예매처별로 다른 값이 섞이지 않게 예매처 ID 를 붙여 저장한다
+		String device = deviceHash == null || deviceHash.isBlank() ? null : vendorId + ":" + deviceHash;
 		return events.save(new PurchaseEvent(vendorId, uid, performanceCode, action, result, hashIp(ip), reactionMs,
-				ip == null ? null : ipIntel.classify(ip).name(), clientTimezone));
+				ip == null ? null : ipIntel.classify(ip).name(), clientTimezone, device));
 	}
 
 	@Transactional(readOnly = true)
@@ -146,7 +151,16 @@ public class RiskService {
 			}
 		});
 
-		// 8~12. IP 검사: 최근 10분 동안 이 사람이 쓴 IP 종류와 브라우저 시간대
+		// 8. 기기 공유: 한 기기(브라우저)에서 여러 계정으로 예매 = 한 사람이 계정 여러 개를 돌림.
+		// IP 와 달리 PC방·회사처럼 여러 사람이 같은 기기를 쓰는 경우가 드물어 점수를 더 준다
+		recent.stream().map(PurchaseEvent::getDeviceHash).filter(Objects::nonNull).distinct().forEach(d -> {
+			long accounts = events.countDistinctUidByDevice(d, now.minusMinutes(10));
+			if (accounts >= SHARED_DEVICE_ACCOUNTS && reasons.stream().noneMatch(r -> r.rule().equals("SHARED_DEVICE"))) {
+				reasons.add(new RiskAssessment.Reason("SHARED_DEVICE", 20, "같은 기기에서 " + accounts + "개 계정 시도"));
+			}
+		});
+
+		// 9~13. IP 검사: 최근 10분 동안 이 사람이 쓴 IP 종류와 브라우저 시간대
 		addIpReasons(recent, reasons);
 
 		int score = Math.min(100, reasons.stream().mapToInt(RiskAssessment.Reason::points).sum());

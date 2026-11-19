@@ -19,3 +19,5 @@ vendor:
   fairticket-url: http://localhost:8080
   # 시연용 기능(화면에서 접속 위치를 해외·VPN 으로 바꿔 보기). 실서비스에서는 false
   demo-mode: true
+  # 공연 몇 시간 전부터 표를 다른 기기로 못 옮기게 할지 (암표 거래는 공연 직전에 몰림)
+  device-move-cutoff-hours: 24
