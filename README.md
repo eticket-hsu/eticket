@@ -92,6 +92,7 @@ H2 콘솔: `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:fairticket`
 | `tests/e2e/auth.mjs` | 서버 간 서명, 위조·변조·재전송 차단 |
 | `tests/e2e/resale-selection.mjs` | 재판매 구매자 선정(추첨 후 선착순), 신청 마감 |
 | `tests/e2e/ip-check.mjs` | 해외·VPN·데이터센터 IP, 시간대 불일치, 예매처 시연용 접속 위치 |
+| `tests/e2e/fraud-cancel.mjs` | 암표상 구매 → 사후 검토 → 표 취소 → 입장 거절 |
 
 ```bash
 tests/e2e/run.sh            # 전부
@@ -113,10 +114,11 @@ tests/e2e/run.sh auth       # 하나만
 | FairTicket | `POST /v1/purchase-events`, `GET /v1/risk`, `GET /v1/risk/overview` | 위험 분석 (실시간) |
 | FairTicket | `POST /v1/demo/purchase-events`, `GET /v1/demo/risk` | 시연 도구·시뮬레이터용 (시연 모드에서만 열림) |
 | FairTicket | `GET /v1/risk/review?performanceCode=`, `POST /v1/risk/review/reports` | 사후 검토·계정 묶음, 발행처 전달 |
+| FairTicket | `POST /v1/risk/review/cancel`, `GET /v1/risk/review/cancellations` | 의심 계정 표 취소 요청(발행처가 취소) · 취소 기록 |
 | FairTicket | `GET /v1/captcha`, `POST /v1/captcha/verify` | 예매처에 제공하는 공통 보안문자 (1회용) |
 | FairTicket | `POST /v1/verify`, `GET /v1/verify/logs` | 입장 검증 중계 |
 | 예매처 | `GET/POST /api/*` | 예매처 사이트용 (회원, 공연, 구매, 내 티켓, 재판매 신청) |
-| 예매처 | `/ft/tickets/{id}` · `lock` · `unlock` · `reissue`, `/ft/admit`, `/ft/payments` · `refunds` · `payouts` | 발행처 표준 API |
+| 예매처 | `/ft/tickets/{id}` · `lock` · `unlock` · `reissue` · `fraud-cancel`, `/ft/admit`, `/ft/payments` · `refunds` · `payouts` | 발행처 표준 API |
 
 **서버 간 인증이 필요한 API** (아래 '연동 규약' 참고): 예매처 `/ft/*` 전체, FairTicket 의 `POST /v1/purchase-events`, `GET /v1/risk`, `POST /v1/captcha/verify`, `POST /v1/quota/reserve` · `{id}/confirm` · `{id}/release`, `POST /v1/resales`.
 
@@ -134,6 +136,7 @@ tests/e2e/run.sh auth       # 하나만
 - **멱등키 (`Idempotency-Key`):** FairTicket 은 상태를 바꾸는 `/ft/*` 호출마다 `resale-{id}-{동작}` 키를 붙이고 재시도해도 같은 키를 쓴다. 발행처(`IdempotencyFilter`)는 키 없는 요청을 400 으로 거절하고, 처음 보는 키는 처리 후 응답을 저장, 같은 키는 다시 처리하지 않고 저장된 응답을 돌려준다(`Idempotent-Replayed: true`). 같은 키에 내용이 다르면 422, 동시에 오면 1건만 처리, 5xx 는 저장하지 않아 재시도 가능, 24시간 보관. 입장 처리(`/ft/admit`)는 원래 한 번만 성공하므로 제외
 - **서버 간 인증 (요청 서명):** 비밀키는 보내지 않고 HMAC-SHA256 서명만 보낸다. 헤더 `X-FT-Client`·`X-FT-Timestamp`·`X-FT-Nonce`·`X-FT-Signature`, 서명 대상은 메서드·경로+쿼리·시각·난수·멱등키·본문 해시. 받는 쪽은 등록된 호출자인지, 시각이 ±5분 안인지, 서명이 맞는지(시간 일정 비교), 난수가 처음인지(재전송 차단) 확인하고 아니면 401. 키는 방향별·예매처별로 따로(FT→별, 별→FT, FT→달, 달→FT), 환경변수로 넣고(설정 파일엔 로컬용 기본값만), 받는 쪽은 키 목록을 받아 교체 중 옛 키·새 키를 함께 허용. FairTicket 은 본문의 `vendorId` 대신 서명으로 확인된 예매처를 기록하고, 다르면 403(다른 예매처 이름 사칭, 남의 한도 예약 확정·반환 차단)
 - **IP 검사:** 접속 IP를 내부망·일반·해외·VPN·데이터센터·Tor 로 판별해 위험 점수에 더한다 (VPN +25, 데이터센터 +25, Tor +40, 해외 +10). 브라우저 시간대는 한국인데 IP가 해외·VPN이면 시간대 불일치 +15. 원래 IP는 저장하지 않고 종류만 남긴다. 해외 거주 팬 오탐을 줄이려고 해외 IP 단독으로는 막지 않는다. `fairticket.ip-policy.block-anonymous: true`로 바꾸면 VPN·데이터센터·Tor 예매를 바로 보류한다(인터파크식 차단). IP 목록은 `fairticket-server/src/main/resources/ip-ranges.csv` (시연용 문서 전용 대역, 실서비스는 상용 IP DB·공식 목록으로 교체)
+- **탐지 → 조치 (부정 구매 취소):** 사후 검토의 의심 계정(신호 2개 이상) 중 발행처 담당자가 고른 계정의 표만 취소 요청한다. 발행처가 표를 취소·환불하고, 그 표는 입장 검증에서 "부정 구매로 취소된 티켓"으로 거절된다. 취소한 만큼 공통 구매 한도를 돌려주고, 취소 근거(겹친 신호)를 기록으로 남긴다. 의심 목록에 없는 계정은 요청해도 취소하지 않는다
 - **시연 전용:** 한 노트북에서 여러 사람을 흉내 내므로 로컬 접속은 회원별 가상 IP 를 쓴다. `fairticket.demo-mode` 는 실서비스에서 끈다
 
 ## 협업 규칙

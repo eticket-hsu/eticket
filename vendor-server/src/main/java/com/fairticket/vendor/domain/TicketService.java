@@ -101,6 +101,13 @@ public class TicketService {
 		return t;
 	}
 
+	/** 부정 구매 취소 (발행처 결정). 이후 이 표의 QR 은 입장 검증에서 거절된다 */
+	public Ticket cancelForFraud(Long ticketId, String reason) {
+		Ticket t = get(ticketId);
+		t.cancelForFraud(reason);
+		return t;
+	}
+
 	public Ticket reissue(Long ticketId, String newOwnerFtUid, Integer acquiredPrice) {
 		Ticket t = get(ticketId);
 		Member newOwner = members.findByFtUid(newOwnerFtUid)
@@ -134,6 +141,7 @@ public class TicketService {
 			case USED -> AdmitResult.ALREADY_USED;
 			case LOCKED -> AdmitResult.RESALE_LOCKED;
 			case VOID -> AdmitResult.VOIDED;
+			case FRAUD_CANCELLED -> AdmitResult.FRAUD_CANCELLED;
 			case VALID -> AdmitResult.OUTDATED_VERSION; // 그사이 재발급된 경우
 		};
 	}

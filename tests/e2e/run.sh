@@ -3,7 +3,7 @@
 # 각 테스트는 데이터를 바꾸므로, 정확한 결과를 보려면 테스트마다 서버를 다시 띄우는 게 좋다.
 cd "$(dirname "$0")"
 fail=0
-for t in ${@:-quota-resale resale-selection risk idempotency auth ip-check}; do
+for t in ${@:-quota-resale resale-selection risk idempotency auth ip-check fraud-cancel}; do
   echo "== $t"
   node "$t.mjs" || fail=1
 done

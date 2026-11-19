@@ -81,6 +81,11 @@ public class VendorClient {
 		return post(vendorId, "/ft/payouts", body, idemKey);
 	}
 
+	/** 부정 구매 취소 요청. 발행처가 표를 취소하고 대금을 환불하며, 이후 QR 은 입장에서 거절된다 */
+	public Map<?, ?> fraudCancel(String vendorId, long ticketId, String reason, String idemKey) {
+		return post(vendorId, "/ft/tickets/" + ticketId + "/fraud-cancel", Map.of("reason", reason), idemKey);
+	}
+
 	public Map<?, ?> admit(String vendorId, String qr) {
 		return post(vendorId, "/ft/admit", Map.of("qr", qr), null);
 	}

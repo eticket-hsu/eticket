@@ -549,6 +549,9 @@ function Tools({ failReissue, setFailReissue }) {
               <button className="btn dark" disabled={busy} onClick={() => run('buy')}>
                 매크로봇 실제 구매 시도
               </button>
+              <button className="btn danger" disabled={busy} onClick={() => run('scalper')}>
+                암표상 실제 구매 (사후 검토용)
+              </button>
             </div>
             {log && <div className="log">{log}</div>}
           </div>
