@@ -12,6 +12,8 @@ import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.springframework.stereotype.Service;
+
+import com.fairticket.fairticket.quota.QuotaService;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -25,15 +27,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReviewService {
 
 	private final PurchaseEventRepository events;
+	private final QuotaService quota;
 	private final List<Report> reports = new CopyOnWriteArrayList<>();
 
-	public ReviewService(PurchaseEventRepository events) {
+	public ReviewService(PurchaseEventRepository events, QuotaService quota) {
 		this.events = events;
+		this.quota = quota;
 	}
 
 	public record Suspect(String uid, List<String> vendors, int attempts, int successes, int failures,
 			int quotaHits, int captchaFails, Integer fastestReactionMs, int noViewRequests, int sharedIpAccounts,
-			List<String> flags) {
+			List<String> flags, List<String> heldTickets) {
 	}
 
 	/** suspiciousMembers: IP 외의 행동 신호가 있는 계정 수 */
@@ -119,7 +123,7 @@ public class ReviewService {
 			// 한 가지 신호만으로는 의심 목록에 올리지 않는다
 			if (flags.size() >= 2) {
 				suspects.add(new Suspect(uid, List.copyOf(vendors), attempts, successes, failures, quotaHits,
-						captchaFails, fastest, noView, sharedIp, flags));
+						captchaFails, fastest, noView, sharedIp, flags, quota.heldTickets(uid, performanceCode)));
 			}
 		});
 		suspects.sort(Comparator.comparingInt((Suspect s) -> s.flags().size()).reversed()

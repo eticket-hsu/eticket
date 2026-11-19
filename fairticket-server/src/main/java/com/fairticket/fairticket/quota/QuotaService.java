@@ -93,6 +93,16 @@ public class QuotaService {
 			.ifPresent(QuotaReservation::release));
 	}
 
+	/** 이 사람이 이 공연에서 지금 갖고 있는 표 ("예매처:티켓번호"). 발급이 확정된 것만 */
+	public List<String> heldTickets(String uid, String performanceCode) {
+		return tx.execute(s -> reservations
+			.findByUidAndPerformanceCodeAndStatusIn(uid, performanceCode, List.of(QuotaReservation.Status.CONFIRMED))
+			.stream()
+			.map(QuotaReservation::getRef)
+			.filter(ref -> ref != null && ref.contains(":"))
+			.toList());
+	}
+
 	public Usage usage(String uid, String performanceCode) {
 		return tx.execute(s -> usageInTx(uid, performanceCode));
 	}
