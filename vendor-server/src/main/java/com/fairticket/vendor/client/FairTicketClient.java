@@ -48,6 +48,15 @@ public class FairTicketClient {
 	/** clientTimezone: 브라우저 시간대 (예: Asia/Seoul). IP 위치와 다르면 VPN 신호로 쓰인다 */
 	public void reportPurchaseAttempt(String ftUid, String performanceCode, String result, String ip,
 			Integer reactionMs, String clientTimezone) {
+		reportPurchaseAttempt(ftUid, performanceCode, result, ip, reactionMs, clientTimezone, null);
+	}
+
+	/**
+	 * deviceHash: 기기 ID 해시 (원래 ID 는 보내지 않음).
+	 * 한 기기에서 여러 계정이 사거나, 여러 계정의 표가 한 기기로 모이는지 보는 데 쓴다.
+	 */
+	public void reportPurchaseAttempt(String ftUid, String performanceCode, String result, String ip,
+			Integer reactionMs, String clientTimezone, String deviceHash) {
 		Map<String, Object> body = new HashMap<>();
 		body.put("vendorId", props.id());
 		body.put("uid", ftUid);
@@ -57,6 +66,7 @@ public class FairTicketClient {
 		body.put("ip", ip == null ? "" : ip);
 		body.put("reactionMs", reactionMs);
 		body.put("clientTimezone", clientTimezone);
+		body.put("deviceHash", deviceHash);
 		try {
 			http.post()
 				.uri("/v1/purchase-events")

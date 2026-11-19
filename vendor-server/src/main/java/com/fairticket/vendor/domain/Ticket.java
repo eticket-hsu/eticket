@@ -45,7 +45,7 @@ public class Ticket {
 
 	private LocalDateTime usedAt;
 
-	/** QR 을 볼 수 있는 기기 (기기 ID 해시). 처음 QR 을 연 기기로 묶이고, 본인인증을 해야 다른 기기로 옮겨진다 */
+	/** QR 을 볼 수 있는 기기 (기기 ID 해시). 예매한 기기로 묶이고 (재판매로 받은 표는 새 주인이 처음 연 기기), 본인인증을 해야 다른 기기로 옮겨진다 */
 	private String boundDevice;
 
 	/** 다른 기기로 옮긴 횟수. 잦으면 계정 양도 의심 신호 */
