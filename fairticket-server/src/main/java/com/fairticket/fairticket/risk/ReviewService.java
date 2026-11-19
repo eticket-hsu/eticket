@@ -71,6 +71,7 @@ public class ReviewService {
 			int attempts = 0, successes = 0, failures = 0, quotaHits = 0, captchaFails = 0, noView = 0;
 			Integer fastest = null;
 			int sharedIp = 1;
+			boolean anonymousIp = false;
 			for (PurchaseEvent e : list) {
 				vendors.add(e.getVendorId());
 				switch (e.getResult()) {
@@ -95,6 +96,9 @@ public class ReviewService {
 				if (e.getIpHash() != null) {
 					sharedIp = Math.max(sharedIp, uidsByIp.get(e.getIpHash()).size());
 				}
+				if (e.getIpType() != null && IpIntelligence.IpType.valueOf(e.getIpType()).anonymous()) {
+					anonymousIp = true;
+				}
 			}
 			List<String> flags = new ArrayList<>();
 			if (vendors.size() >= 2) {
@@ -111,6 +115,9 @@ public class ReviewService {
 			}
 			if (quotaHits >= RiskService.QUOTA_HIT_LIMIT) {
 				flags.add("공통 한도 초과 시도 " + quotaHits + "회");
+			}
+			if (anonymousIp) {
+				flags.add("VPN·데이터센터 IP 사용");
 			}
 			behaviorSignals.put(uid, flags.size()); // IP 신호를 넣기 전 = 행동 신호 수
 			if (sharedIp >= RiskService.SHARED_IP_ACCOUNTS) {

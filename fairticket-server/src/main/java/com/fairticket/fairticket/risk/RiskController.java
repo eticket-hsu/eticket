@@ -35,7 +35,8 @@ public class RiskController {
 	}
 
 	public record PurchaseEventRequest(@NotBlank String vendorId, @NotBlank String uid,
-			@NotBlank String performanceCode, String action, String result, String ip, Integer reactionMs) {
+			@NotBlank String performanceCode, String action, String result, String ip, Integer reactionMs,
+			String clientTimezone) {
 	}
 
 	/** 예매처 → 구매 시도 이벤트 (서명 필수). 기록되는 예매처는 본문이 아니라 서명으로 확인된 예매처다. TODO: 배치 전송 */
@@ -67,7 +68,7 @@ public class RiskController {
 	private Map<String, Object> save(String vendorId, PurchaseEventRequest req) {
 		PurchaseEvent e = riskService.record(vendorId, req.uid(), req.performanceCode(),
 				req.action() == null ? "PURCHASE" : req.action(), req.result() == null ? "ATTEMPT" : req.result(),
-				req.ip(), req.reactionMs());
+				req.ip(), req.reactionMs(), req.clientTimezone());
 		return Map.of("id", e.getId());
 	}
 
