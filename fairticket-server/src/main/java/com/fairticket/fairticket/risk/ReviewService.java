@@ -68,7 +68,7 @@ public class ReviewService {
 		Map<String, Integer> behaviorSignals = new HashMap<>();
 		byUid.forEach((uid, list) -> {
 			Set<String> vendors = new LinkedHashSet<>();
-			int attempts = 0, successes = 0, failures = 0, quotaHits = 0, captchaFails = 0, noView = 0;
+			int attempts = 0, successes = 0, failures = 0, quotaHits = 0, captchaFails = 0, noView = 0, deviceMoves = 0;
 			Integer fastest = null;
 			int sharedIp = 1;
 			for (PurchaseEvent e : list) {
@@ -78,6 +78,7 @@ public class ReviewService {
 					case "SUCCESS" -> successes++;
 					case "QUOTA" -> quotaHits++;
 					case "CAPTCHA_FAIL" -> captchaFails++;
+					case "DEVICE_CHANGE" -> deviceMoves++;
 					default -> {
 					}
 				}
@@ -111,6 +112,10 @@ public class ReviewService {
 			}
 			if (quotaHits >= RiskService.QUOTA_HIT_LIMIT) {
 				flags.add("공통 한도 초과 시도 " + quotaHits + "회");
+			}
+			// 표를 다른 기기로 옮김: 계정 양도·대리 티켓팅 의심 (폰 교체 1회는 흔하므로 2회부터)
+			if (deviceMoves >= 2) {
+				flags.add("표를 다른 기기로 " + deviceMoves + "회 옮김");
 			}
 			behaviorSignals.put(uid, flags.size()); // IP 신호를 넣기 전 = 행동 신호 수
 			if (sharedIp >= RiskService.SHARED_IP_ACCOUNTS) {
