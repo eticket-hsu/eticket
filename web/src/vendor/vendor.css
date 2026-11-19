@@ -124,3 +124,8 @@
   .v-hero h1 { font-size: 26px; }
   .seat { width: 24px; height: 24px; }
 }
+
+/* 시연용 접속 위치 선택 */
+.v-demo-loc { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 4px 8px; border: 1px dashed var(--line-strong); border-radius: 99px; color: var(--text-3); font-size: 12.5px; white-space: nowrap; }
+.v-demo-loc select { border: 0; background: transparent; font: inherit; color: inherit; cursor: pointer; outline: none; }
+.v-demo-loc.on { border-style: solid; border-color: var(--bad); color: var(--bad); background: var(--bad-soft); }
