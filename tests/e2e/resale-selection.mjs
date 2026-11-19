@@ -4,7 +4,7 @@ import { localDateTime } from './time.mjs'
 const FT = 'http://localhost:8080', STAR = 'http://localhost:8081'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 async function call(method, url, body) {
-  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) })
+  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-Device-Id': 'e2e-device' }, body: body && JSON.stringify(body) })
   const t = await res.text()
   let data = null
   try { data = t ? JSON.parse(t) : null } catch { data = t }

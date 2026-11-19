@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import { Ban, Copy, Repeat, TicketX, Lock, ShieldCheck, Check } from 'lucide-react'
+import { Ban, Copy, Repeat, TicketX, Lock, ShieldCheck, Check, Smartphone, RefreshCw } from 'lucide-react'
 import { api } from '../api.js'
 import {
   Badge, Modal, Poster, RESALE_STATUS, ResaleStepper, TICKET_STATUS, dateLabel, usePolling, useToast, won,
@@ -14,7 +14,8 @@ export default function MyTickets() {
   const { vendorId, me } = useVendor()
   const [tickets, setTickets] = useState(null)
   const [myResales, setMyResales] = useState([])
-  const [qrOf, setQrOf] = useState(null)
+  const [qrOf, setQrOf] = useState(null) // 티켓 id (열려 있는 동안 새 QR 로 계속 바뀜)
+  const [moveOf, setMoveOf] = useState(null)
   const [resaleOf, setResaleOf] = useState(null)
   const toast = useToast()
 
@@ -66,6 +67,7 @@ export default function MyTickets() {
           const listing = listingFor(t)
           const locked = t.status === 'LOCKED'
           const used = t.status === 'USED'
+          const otherDevice = t.deviceLocked
           const fraud = t.status === 'FRAUD_CANCELLED'
           return (
             <article key={t.id} className="mticket">
@@ -98,17 +100,27 @@ export default function MyTickets() {
                 <i />
               </div>
               <div className="mticket-qr">
-                {/* 사용 정지·취소된 표도 QR 은 열어 볼 수 있다 (캡처해 둔 QR 로 입장을 시도해도 막히는지 확인용) */}
-                <div className={`qr-box ${locked || fraud ? 'locked' : ''}`} onClick={() => setQrOf(t)}>
-                  <QRCodeSVG value={t.qr} size={104} />
-                  {locked && (
+                {/* 취소·사용 정지된 표도 QR 은 열어 볼 수 있다 (캡처해 둔 QR 로 입장을 시도해도 막히는지 확인용). 다른 기기면 옮기기 */}
+                <div
+                  className={`qr-box ${locked || fraud || otherDevice ? 'locked' : ''}`}
+                  onClick={() => (otherDevice ? setMoveOf(t) : setQrOf(t.id))}
+                >
+                  {otherDevice ? <div className="qr-blank" /> : <QRCodeSVG value={t.qr} size={104} />}
+                  {otherDevice && (
+                    <div className="qr-over">
+                      <Smartphone size={18} />
+                      <br />
+                      다른 기기
+                    </div>
+                  )}
+                  {!otherDevice && locked && (
                     <div className="qr-over">
                       <Lock size={18} />
                       <br />
                       사용 정지
                     </div>
                   )}
-                  {fraud && (
+                  {!otherDevice && fraud && (
                     <div className="qr-over">
                       <Ban size={18} />
                       <br />
@@ -128,6 +140,13 @@ export default function MyTickets() {
                       <span className="tiny muted" style={{ display: 'block', marginTop: 4 }}>QR을 누르면 내용을 볼 수 있어요 (입장 검증 시연용)</span>
                       {t.cancelReason && <span className="tiny muted" style={{ display: 'block', marginTop: 4 }}>근거: {t.cancelReason}</span>}
                     </>
+                  ) : otherDevice ? (
+                    <>
+                      다른 기기에서 받은 표라 QR을 볼 수 없습니다.
+                      <button className="btn sm" style={{ display: 'flex', marginTop: 8 }} onClick={() => setMoveOf(t)}>
+                        <Smartphone size={14} /> 본인인증하고 이 기기로 옮기기
+                      </button>
+                    </>
                   ) : locked ? (
                     '공식 재판매가 진행 중이라 이 QR로는 입장할 수 없습니다. 판매가 취소되면 다시 사용할 수 있습니다.'
                   ) : used ? (
@@ -135,8 +154,8 @@ export default function MyTickets() {
                   ) : (
                     <>
                       QR을 눌러 크게 보기
-                      <br />
-                      <span className="tiny muted">재발급되면 이 QR은 자동으로 무효가 됩니다</span>
+                      <QrCountdown refreshAt={t.qrRefreshAt} />
+                      <span className="tiny muted">캡처한 QR은 1분 뒤 입장할 수 없습니다</span>
                     </>
                   )}
                 </div>
@@ -170,7 +189,10 @@ export default function MyTickets() {
 
       <ResaleHistory resales={myResales.filter((r) => !ACTIVE.includes(r.status))} />
 
-      {qrOf && <QrModal ticket={qrOf} onClose={() => setQrOf(null)} />}
+      {qrOf && tickets.find((t) => t.id === qrOf)?.qr && (
+        <QrModal ticket={tickets.find((t) => t.id === qrOf)} onClose={() => setQrOf(null)} />
+      )}
+      {moveOf && <DeviceMoveModal ticket={moveOf} onClose={() => setMoveOf(null)} onDone={load} />}
       {resaleOf && <ResaleRequestModal ticket={resaleOf} onClose={() => setResaleOf(null)} onDone={load} />}
     </>
   )
@@ -209,6 +231,7 @@ function QrModal({ ticket, onClose }) {
         <p className="small muted" style={{ marginTop: 4 }}>
           {ticket.ownerName} · 발급 버전 v{ticket.issueVersion}
         </p>
+        <QrCountdown refreshAt={ticket.qrRefreshAt} big />
         <p className="tiny mono muted" style={{ marginTop: 12, wordBreak: 'break-all' }}>
           {ticket.qr}
         </p>
@@ -216,6 +239,72 @@ function QrModal({ ticket, onClose }) {
           <Copy size={14} /> QR 내용 복사
         </button>
       </div>
+    </Modal>
+  )
+}
+
+/** 1초마다 다시 그리는 현재 시각 */
+function useNow() {
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
+  return now
+}
+
+/** QR 이 다음 것으로 바뀌기까지 남은 시간 */
+function QrCountdown({ refreshAt, big }) {
+  const now = useNow()
+  if (!refreshAt) return null
+  const left = Math.max(0, Math.ceil((refreshAt - now) / 1000))
+  const pct = Math.min(100, (left / 30) * 100)
+  return (
+    <div className={`qr-countdown ${big ? 'big' : ''}`}>
+      <RefreshCw size={big ? 14 : 12} /> {left > 0 ? `${left}초 뒤 새 QR로 바뀜` : '새 QR 받는 중…'}
+      <i style={{ width: `${pct}%` }} />
+    </div>
+  )
+}
+
+/** 다른 기기에 묶인 표를 본인인증으로 이 기기에 옮긴다 (폰 교체·분실 대비) */
+function DeviceMoveModal({ ticket, onClose, onDone }) {
+  const { vendorId, me } = useVendor()
+  const [code, setCode] = useState('')
+  const [busy, setBusy] = useState(false)
+  const toast = useToast()
+  async function submit() {
+    setBusy(true)
+    try {
+      await api.post(vendorId, `/api/tickets/${ticket.id}/device`, { memberId: me.id, code })
+      toast('이 기기로 표를 옮겼습니다. 이전 기기에서는 QR이 보이지 않습니다', 'good')
+      onDone()
+      onClose()
+    } catch (e) {
+      toast(e.message, 'bad')
+      setBusy(false)
+    }
+  }
+  return (
+    <Modal title="이 기기로 표 옮기기" onClose={onClose}>
+      <p className="small text-2 lines" style={{ lineHeight: 1.7, marginBottom: 14 }}>
+        <span>이 표는 다른 기기에서 처음 열려서, 그 기기에서만 QR이 보입니다.</span>
+        <span>폰을 바꿨거나 잃어버렸다면 예매자 본인인증 후 이 기기로 옮길 수 있습니다.</span>
+      </p>
+      <input
+        className="field"
+        inputMode="numeric"
+        maxLength={6}
+        placeholder="인증번호 6자리 (시연용 123456)"
+        value={code}
+        onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+      />
+      <button className="btn primary lg block" style={{ marginTop: 14 }} disabled={busy || code.length !== 6} onClick={submit}>
+        <ShieldCheck size={16} /> 본인인증하고 옮기기
+      </button>
+      <p className="tiny muted center" style={{ marginTop: 10 }}>
+        옮긴 기록은 남습니다. 자주 옮기면 계정 양도 의심으로 검토될 수 있습니다
+      </p>
     </Modal>
   )
 }

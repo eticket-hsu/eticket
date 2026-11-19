@@ -27,6 +27,7 @@
 .result-over { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; text-align: center; animation: fade 0.12s; cursor: pointer; }
 .result-over.ok { background: #0c8f4a; }
 .result-over.no { background: #c62828; }
+.result-over.id { background: #b45309; }
 .result-over .ic { width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,0.18); display: grid; place-items: center; margin: 0 auto 26px; }
 .result-over h2 { font-size: 64px; font-weight: 900; color: #fff; letter-spacing: -0.03em; }
 .result-over p { font-size: 24px; color: rgba(255,255,255,0.92); margin-top: 12px; font-weight: 600; }

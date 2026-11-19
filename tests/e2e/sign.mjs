@@ -17,7 +17,7 @@ export function signHeaders({ client, secret, method, url, body = '', idem = '',
 /** signAs: {client, secret} 또는 생략. extra: 서명 후 덮어쓸 값(변조 테스트) */
 export async function call(method, url, body, { signAs, idem, headers = {}, tamperBody, ts, nonce } = {}) {
   const raw = body === undefined ? '' : JSON.stringify(body)
-  let h = { 'Content-Type': 'application/json', ...headers }
+  let h = { 'Content-Type': 'application/json', 'X-Device-Id': 'e2e-device', ...headers }
   if (idem && !signAs) h['Idempotency-Key'] = idem
   if (signAs) h = { ...h, ...signHeaders({ ...signAs, method, url, body: raw, idem, ts, nonce }) }
   const sent = tamperBody !== undefined ? JSON.stringify(tamperBody) : raw

@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fairticket.vendor.client.FairTicketClient;
@@ -32,6 +34,9 @@ import jakarta.validation.constraints.NotNull;
 @RestController
 @RequestMapping("/api")
 public class PublicApiController {
+
+	/** 화면이 보내는 기기 ID (브라우저마다 다름). 실서비스 앱이라면 설치 기기 ID */
+	static final String DEVICE_HEADER = "X-Device-Id";
 
 	private final VendorProperties props;
 	private final MemberRepository members;
@@ -108,7 +113,7 @@ public class PublicApiController {
 	 */
 	@PostMapping("/performances/{id}/purchase")
 	public ResponseEntity<?> purchase(@PathVariable Long id, @RequestBody PurchaseRequest req,
-			HttpServletRequest http) {
+			@RequestHeader(value = DEVICE_HEADER, required = false) String deviceId, HttpServletRequest http) {
 		Member member = members.findById(req.memberId()).orElseThrow();
 		Performance perf = performances.findById(id).orElseThrow();
 		String uid = member.getFtUid();
@@ -164,13 +169,78 @@ public class PublicApiController {
 		fairTicket.confirmQuota(quota.id(), t.getId());
 		viewTracker.clear(member.getId(), id);
 		fairTicket.reportPurchaseAttempt(uid, perf.getCode(), "SUCCESS", ip);
-		return ResponseEntity.ok(Map.of("ticket", TicketView.of(t, qrCodec), "risk", risk == null ? "UNKNOWN" : risk,
+		// 산 기기에 표를 묶는다 (이 기기에서만 QR 이 보임)
+		return ResponseEntity.ok(Map.of("ticket", viewFor(t, deviceId), "risk", risk == null ? "UNKNOWN" : risk,
 				"level", level, "quotaChecked", !quota.unavailable()));
 	}
 
+	/**
+	 * 내 티켓. QR 은 표가 묶인 기기에서만 보이고 30초마다 바뀐다 (화면은 주기적으로 다시 불러 새 QR 을 받는다).
+	 * 다른 기기에서 열면 QR 대신 deviceLocked = true 가 온다.
+	 */
 	@GetMapping("/members/{memberId}/tickets")
-	public List<TicketView> myTickets(@PathVariable Long memberId) {
-		return tickets.findByOwnerIdOrderByIdDesc(memberId).stream().map(t -> TicketView.of(t, qrCodec)).toList();
+	public List<TicketView> myTickets(@PathVariable Long memberId,
+			@RequestHeader(value = DEVICE_HEADER, required = false) String deviceId) {
+		return tickets.findByOwnerIdOrderByIdDesc(memberId).stream().map(t -> viewFor(t, deviceId)).toList();
+	}
+
+	public record DeviceMoveRequest(@NotNull Long memberId, String code) {
+	}
+
+	/**
+	 * 표를 이 기기로 옮기기. 폰을 바꾸거나 잃어버린 주인을 위해 본인인증을 거쳐 옮긴다.
+	 * 계정을 통째로 넘겨받은 사람은 주인 명의 본인인증을 통과할 수 없으므로 옮길 수 없다.
+	 * 옮긴 기록은 FairTicket 에 보내 사후 검토의 계정 양도 의심 신호로 쓴다.
+	 */
+	@PostMapping("/tickets/{id}/device")
+	public ResponseEntity<?> moveDevice(@PathVariable Long id, @RequestBody DeviceMoveRequest req,
+			@RequestHeader(value = DEVICE_HEADER, required = false) String deviceId, HttpServletRequest http) {
+		if (deviceId == null || deviceId.isBlank()) {
+			return ResponseEntity.badRequest().body(Map.of("error", "기기 정보가 없습니다"));
+		}
+		if (!identity.verify(req.memberId(), req.code())) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "본인인증 번호가 맞지 않습니다"));
+		}
+		Ticket t = ticketService.moveToDevice(id, req.memberId(), deviceHash(deviceId));
+		Member member = members.findById(req.memberId()).orElseThrow();
+		fairTicket.reportPurchaseAttempt(member.getFtUid(), t.getPerformance().getCode(), "DEVICE_CHANGE",
+				clientIp(http, member));
+		return ResponseEntity.ok(viewFor(ticketService.get(id), deviceId));
+	}
+
+	/**
+	 * 시연용: 몇 초 전에 화면을 캡처해 둔 것과 같은 QR 을 만든다 (캡처본이 입장에서 거절되는지 보여 주기).
+	 * 실서비스(demo-mode: false)에서는 404.
+	 */
+	@GetMapping("/demo/tickets/{id}/old-qr")
+	public ResponseEntity<?> oldQr(@PathVariable Long id, @RequestParam(defaultValue = "120") long secondsAgo) {
+		if (!props.demoMode()) {
+			return ResponseEntity.notFound().build();
+		}
+		long window = QrCodec.currentWindow() - Math.max(0, secondsAgo) / QrCodec.WINDOW_SECONDS;
+		return ResponseEntity.ok(Map.of("qr", qrCodec.encode(ticketService.get(id), window), "secondsAgo", secondsAgo));
+	}
+
+	/** 기기 ID 를 그대로 저장하지 않고 해시로 바꾼다 */
+	private String deviceHash(String deviceId) {
+		try {
+			byte[] d = java.security.MessageDigest.getInstance("SHA-256")
+				.digest((props.id() + ":" + deviceId).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+			return java.util.HexFormat.of().formatHex(d, 0, 16);
+		}
+		catch (java.security.NoSuchAlgorithmException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	/** 표가 이 기기에 묶여 있으면 지금 시각의 QR 을, 아니면 QR 없이 돌려준다 (처음 여는 기기면 묶음) */
+	private TicketView viewFor(Ticket t, String deviceId) {
+		if (deviceId == null || deviceId.isBlank() || !ticketService.bindOrMatch(t.getId(), deviceHash(deviceId))) {
+			return TicketView.locked(ticketService.get(t.getId()));
+		}
+		long window = QrCodec.currentWindow();
+		return TicketView.withQr(ticketService.get(t.getId()), qrCodec.encode(t, window),
+				QrCodec.refreshAtMillis(window), QrCodec.expiresAtMillis(window));
 	}
 
 	/** price 를 비우면 상한 가격으로 올린다 */

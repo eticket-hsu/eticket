@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
-import { Camera, CameraOff, CheckCircle2, ScanLine, XCircle, Activity } from 'lucide-react'
+import { Camera, CameraOff, CheckCircle2, ScanLine, XCircle, Activity, IdCard } from 'lucide-react'
 import { api } from '../api.js'
 import './gate.css'
 
@@ -46,7 +46,8 @@ export default function GateApp() {
     setResult({ ...r, ref })
     setHistory((h) => [{ ...r, ref, at: new Date().toLocaleTimeString('ko-KR') }, ...h].slice(0, 30))
     clearTimeout(resultTimer.current)
-    resultTimer.current = setTimeout(() => setResult(null), 2600)
+    // 신분증 확인은 직원이 읽고 확인할 시간이 필요하므로 더 오래 띄운다
+    resultTimer.current = setTimeout(() => setResult(null), r?.idCheck ? 8000 : 2600)
   }
 
   async function startCamera() {
@@ -177,14 +178,15 @@ export default function GateApp() {
       </div>
 
       {result && (
-        <div className={`result-over ${result.admitted ? 'ok' : 'no'}`} onClick={() => setResult(null)}>
+        <div className={`result-over ${result.idCheck ? 'id' : result.admitted ? 'ok' : 'no'}`} onClick={() => setResult(null)}>
           <div>
-            <div className="ic">{result.admitted ? <CheckCircle2 size={84} color="#fff" /> : <XCircle size={84} color="#fff" />}</div>
-            <h2>{result.admitted ? '입장 승인' : '입장 불가'}</h2>
+            <div className="ic">{result.idCheck ? <IdCard size={84} color="#fff" /> : result.admitted ? <CheckCircle2 size={84} color="#fff" /> : <XCircle size={84} color="#fff" />}</div>
+            <h2>{result.idCheck ? '신분증 확인' : result.admitted ? '입장 승인' : '입장 불가'}</h2>
             <p>
-              {result.message}
+              {result.idCheck ? `예매자 ${result.idCheck.ownerName} 본인인지 신분증을 확인하세요` : result.message}
               {result.vendorName ? ` · ${result.vendorName}` : ''}
             </p>
+            {result.idCheck && <p style={{ fontSize: 16, opacity: 0.85 }}>의심 근거: {result.idCheck.reasons.join(', ')}</p>}
             <small className="mono">
               {result.ref} · 게이트 {gate}
             </small>
