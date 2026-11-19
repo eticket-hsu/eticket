@@ -155,7 +155,7 @@ export default function MyTickets() {
                     <>
                       QR을 눌러 크게 보기
                       <QrCountdown refreshAt={t.qrRefreshAt} />
-                      <span className="tiny muted">캡처한 QR은 1분 뒤 입장할 수 없습니다</span>
+                      <span className="tiny muted">캡처한 QR은 40초 뒤 입장할 수 없습니다</span>
                     </>
                   )}
                 </div>
@@ -272,6 +272,7 @@ function DeviceMoveModal({ ticket, onClose, onDone }) {
   const { vendorId, me } = useVendor()
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
+  const [closed, setClosed] = useState(null)
   const toast = useToast()
   async function submit() {
     setBusy(true)
@@ -281,15 +282,28 @@ function DeviceMoveModal({ ticket, onClose, onDone }) {
       onDone()
       onClose()
     } catch (e) {
-      toast(e.message, 'bad')
+      // 공연 직전(24시간 전부터)에는 옮길 수 없음: 현장 신분증 확인 안내
+      if (e.data?.moveClosed) setClosed(e.message)
+      else toast(e.message, 'bad')
       setBusy(false)
     }
+  }
+  if (closed) {
+    return (
+      <Modal title="기기를 옮길 수 없습니다" onClose={onClose}>
+        <p className="small text-2" style={{ lineHeight: 1.7 }}>{closed}</p>
+        <button className="btn lg block" style={{ marginTop: 14 }} onClick={onClose}>
+          닫기
+        </button>
+      </Modal>
+    )
   }
   return (
     <Modal title="이 기기로 표 옮기기" onClose={onClose}>
       <p className="small text-2 lines" style={{ lineHeight: 1.7, marginBottom: 14 }}>
-        <span>이 표는 다른 기기에서 처음 열려서, 그 기기에서만 QR이 보입니다.</span>
+        <span>이 표는 예매한 기기에 묶여 있어서, 그 기기에서만 QR이 보입니다.</span>
         <span>폰을 바꿨거나 잃어버렸다면 예매자 본인인증 후 이 기기로 옮길 수 있습니다.</span>
+        <span>공연 24시간 전부터는 옮길 수 없습니다.</span>
       </p>
       <input
         className="field"

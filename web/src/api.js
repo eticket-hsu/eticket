@@ -6,7 +6,7 @@ async function request(base, path, options = {}) {
   // 요청 본문 변환 오류는 네트워크 문제와 구분되도록 fetch 밖에서 한다
   const body = options.body === undefined ? undefined : JSON.stringify(options.body)
   const headers = { 'Content-Type': 'application/json' }
-  // 예매처에는 기기 ID 를 보낸다: 표는 처음 QR 을 연 기기에서만 보인다
+  // 예매처에는 기기 ID 를 보낸다: 표는 예매한 기기에서만 보인다
   if (base !== 'ft') headers['X-Device-Id'] = deviceId()
   // 시연용: 예매처 화면에서 고른 접속 위치(해외·VPN 등)를 예매처 서버에 알린다
   const demoIp = base !== 'ft' ? demoLocation.ip() : null
