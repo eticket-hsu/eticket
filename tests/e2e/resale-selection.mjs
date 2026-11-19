@@ -1,5 +1,6 @@
 // 재판매 구매자 선정 방식 (HYBRID: 공연 24시간 전까지 추첨, 그 뒤 선착순) + 신청 마감 6시간 전
 import { call as scall, AS } from './sign.mjs'
+import { localDateTime } from './time.mjs'
 const FT = 'http://localhost:8080', STAR = 'http://localhost:8081'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 async function call(method, url, body) {
@@ -70,7 +71,7 @@ r = await call('POST', `${FT}/v1/resales/${L.id}/entries`, { buyerUid: 'ft-u-bot
 check('전환 후에는 다시 응모 불가', r.status === 409)
 
 console.log('--- 신청 마감 6시간 전 ---')
-const in5h = new Date(Date.now() + 5 * 3600e3 + 9 * 3600e3).toISOString().slice(0, 19)
+const in5h = localDateTime(Date.now() + 5 * 3600e3)
 r = await scall('POST', `${FT}/v1/resales`, { vendorId: 'star', vendorTicketId: 9999, performanceCode: 'PERF-001', sellerUid: 'x', price: 1, startsAt: in5h }, { signAs: AS.star })
 check('공연 5시간 전 신청 거절', r.status === 409 && /6시간/.test(r.data?.error), r.data?.error)
 

@@ -20,11 +20,25 @@ FairTicket 은 티켓과 돈을 갖지 않는다. 잠금·재발급·결제·환
 
 필요: Java 21 이상, Node 20 이상. (Gradle 은 wrapper 가 알아서 받음)
 
+**맥·리눅스**
+
 ```bash
 ./run-all.sh
 ```
 
-한 번에 서버 3개와 웹을 띄운다. 종료는 Ctrl+C. 따로 띄우려면:
+한 번에 서버 3개와 웹을 띄운다. 종료는 Ctrl+C.
+
+**윈도우** (명령 프롬프트·PowerShell, 또는 탐색기에서 더블클릭)
+
+```bat
+run-all.cmd
+```
+
+서버 3개와 웹이 각각 새 창으로 뜬다. 종료는 `stop-all.cmd` 또는 열린 창 4개를 닫는다. Git Bash·WSL 에서는 `./run-all.sh` 도 된다.
+
+브라우저에서 http://localhost:5173 을 연다 (서버가 뜨는 데 30초~1분).
+
+따로 띄우려면 (윈도우는 `./gradlew` 대신 `gradlew.bat`, 경로는 `\`):
 
 ```bash
 cd fairticket-server && ./gradlew bootRun
@@ -35,7 +49,7 @@ cd web && npm install && npm run dev
 
 > 같은 프로젝트에서 `bootRun` 을 두 번 동시에 돌리면 Gradle 잠금 때문에 멈춘다. 예매처 두 개는 jar 로 띄운다.
 
-DB 는 H2 인메모리라 재시작하면 시드 데이터(회원 민지·지수·서연·매크로봇, 공연 1개)로 초기화된다.
+DB 는 H2 인메모리라 재시작하면 시드 데이터로 초기화된다. 회원: 민지·지수·서연·하늘·도윤·매크로봇. 공연: 별티켓 4개(PERF-001·002·004·005), 달티켓 3개(PERF-001·002·003). 시연용 본인인증 번호는 `123456`.
 H2 콘솔: `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:fairticket`).
 
 ## 화면
@@ -82,6 +96,8 @@ H2 콘솔: `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:fairticket`
 tests/e2e/run.sh            # 전부
 tests/e2e/run.sh auth       # 하나만
 ```
+
+윈도우는 `tests\e2e\run.cmd` (하나만: `tests\e2e\run.cmd auth`).
 
 ## 주요 API
 
@@ -151,6 +167,17 @@ tests/e2e/run.sh auth       # 하나만
 - 영역은 브랜치와 같다. 여러 영역이면 생략할 수 있다
 - 요약은 한국어로, 50자 안팎, 끝에 마침표 없이
 - 예: `feat(server): 공통 구매 한도 예약·확정·반환 API 추가`, `fix(web): 구매 버튼 클릭 시 서버 연결 오류 메시지 수정`
+
+### 맥·윈도우 공통 개발
+
+팀에 맥과 윈도우 사용자가 모두 있으므로, 새로 만드는 코드·스크립트·테스트는 둘 다에서 돌아가야 한다.
+
+- 셸 스크립트(`.sh`)를 만들면 윈도우용(`.cmd`)도 같이 만든다. 줄바꿈은 `.gitattributes`가 맞춰 준다 (`.cmd` CRLF, `.sh` LF)
+- 경로를 `/`나 `\`로 직접 이어 붙이지 말고 Node `path`, Java `Path` 같은 표준 API를 쓴다
+- 맥 전용 명령(`lsof`, `open`, `sed -i ''` 등)을 코드나 스크립트에 넣지 않는다
+- 시간대를 가정하지 않는다 (예: `+9시간` 하드코딩 금지. 테스트는 `tests/e2e/time.mjs`의 `localDateTime` 사용)
+- 자바 소스는 UTF-8 로 컴파일한다 (`build.gradle`에 지정됨)
+- 윈도우에서 직접 확인하지 못한 변경은 PR에 그렇다고 적고 윈도우 팀원에게 확인을 부탁한다
 
 ### 용어
 

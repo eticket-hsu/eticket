@@ -13,3 +13,6 @@ dist/
 .claude/settings.local.json
 # 로그
 *.log
+
+# Vite 캐시
+.vite/
