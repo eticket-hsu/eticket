@@ -58,7 +58,15 @@ public class ReviewService {
 	}
 
 	public Review review(String performanceCode) {
-		List<PurchaseEvent> all = events.findByPerformanceCodeOrderByOccurredAtAsc(performanceCode);
+		return review(performanceCode, null);
+	}
+
+	/** vendorScope 가 있으면 그 예매처 기록만으로 검토한다 (비교 실험: 예매처 혼자 볼 때) */
+	public Review review(String performanceCode, String vendorScope) {
+		List<PurchaseEvent> all = events.findByPerformanceCodeOrderByOccurredAtAsc(performanceCode)
+			.stream()
+			.filter(e -> vendorScope == null || vendorScope.equals(e.getVendorId()))
+			.toList();
 		Map<String, List<PurchaseEvent>> byUid = new HashMap<>();
 		Map<String, Set<String>> uidsByIp = new HashMap<>();
 		Map<String, Set<String>> uidsByDevice = new HashMap<>();

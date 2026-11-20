@@ -78,8 +78,20 @@ public class RiskService {
 
 	@Transactional(readOnly = true)
 	public RiskAssessment assess(String uid, String performanceCode) {
+		return assess(uid, performanceCode, null);
+	}
+
+	/**
+	 * vendorScope 가 있으면 그 예매처 기록만 보고 판단한다 = FairTicket 없이 예매처 혼자 볼 때.
+	 * 비교 실험("예매처마다 따로 볼 때 vs 합쳐 볼 때")에서 같은 규칙으로 두 경우를 재려고 둔다.
+	 */
+	@Transactional(readOnly = true)
+	public RiskAssessment assess(String uid, String performanceCode, String vendorScope) {
 		LocalDateTime now = LocalDateTime.now();
-		List<PurchaseEvent> recent = events.findByUidAndOccurredAtAfterOrderByOccurredAtAsc(uid, now.minusMinutes(10));
+		List<PurchaseEvent> recent = events.findByUidAndOccurredAtAfterOrderByOccurredAtAsc(uid, now.minusMinutes(10))
+			.stream()
+			.filter(e -> vendorScope == null || vendorScope.equals(e.getVendorId()))
+			.toList();
 		List<PurchaseEvent> attempts = recent.stream().filter(e -> "ATTEMPT".equals(e.getResult())).toList();
 		List<RiskAssessment.Reason> reasons = new ArrayList<>();
 
@@ -145,7 +157,7 @@ public class RiskService {
 
 		// 7. IP 공유 (보조 신호: IP 는 쉽게 바뀌므로 점수가 낮다)
 		recent.stream().map(PurchaseEvent::getIpHash).filter(Objects::nonNull).distinct().forEach(ip -> {
-			long accounts = events.countDistinctUidByIp(ip, now.minusMinutes(10));
+			long accounts = events.countDistinctUidByIp(ip, now.minusMinutes(10), vendorScope);
 			if (accounts >= SHARED_IP_ACCOUNTS && reasons.stream().noneMatch(r -> r.rule().equals("SHARED_IP"))) {
 				reasons.add(new RiskAssessment.Reason("SHARED_IP", 10, "같은 IP에서 " + accounts + "개 계정 시도"));
 			}
@@ -154,7 +166,7 @@ public class RiskService {
 		// 8. 기기 공유: 한 기기(브라우저)에서 여러 계정으로 예매 = 한 사람이 계정 여러 개를 돌림.
 		// IP 와 달리 PC방·회사처럼 여러 사람이 같은 기기를 쓰는 경우가 드물어 점수를 더 준다
 		recent.stream().map(PurchaseEvent::getDeviceHash).filter(Objects::nonNull).distinct().forEach(d -> {
-			long accounts = events.countDistinctUidByDevice(d, now.minusMinutes(10));
+			long accounts = events.countDistinctUidByDevice(d, now.minusMinutes(10), vendorScope);
 			if (accounts >= SHARED_DEVICE_ACCOUNTS && reasons.stream().noneMatch(r -> r.rule().equals("SHARED_DEVICE"))) {
 				reasons.add(new RiskAssessment.Reason("SHARED_DEVICE", 20, "같은 기기에서 " + accounts + "개 계정 시도"));
 			}

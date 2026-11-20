@@ -23,12 +23,16 @@ public interface PurchaseEventRepository extends JpaRepository<PurchaseEvent, Lo
 	@Query("""
 			select count(distinct e.uid) from PurchaseEvent e
 			where e.ipHash = :ipHash and e.occurredAt > :after
+			  and (:vendorId is null or e.vendorId = :vendorId)
 			""")
-	long countDistinctUidByIp(@Param("ipHash") String ipHash, @Param("after") LocalDateTime after);
+	long countDistinctUidByIp(@Param("ipHash") String ipHash, @Param("after") LocalDateTime after,
+			@Param("vendorId") String vendorId);
 
 	@Query("""
 			select count(distinct e.uid) from PurchaseEvent e
 			where e.deviceHash = :deviceHash and e.occurredAt > :after
+			  and (:vendorId is null or e.vendorId = :vendorId)
 			""")
-	long countDistinctUidByDevice(@Param("deviceHash") String deviceHash, @Param("after") LocalDateTime after);
+	long countDistinctUidByDevice(@Param("deviceHash") String deviceHash, @Param("after") LocalDateTime after,
+			@Param("vendorId") String vendorId);
 }
