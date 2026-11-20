@@ -24,8 +24,7 @@ async function compare(uid, log) {
   log(`별티켓 혼자 볼 때     ${String(star.score).padStart(3)}점  ${label(star)}`)
   log(`달티켓 혼자 볼 때     ${String(moon.score).padStart(3)}점  ${label(moon)}`)
   log(`FairTicket 합쳐 볼 때 ${String(all.score).padStart(3)}점  ${label(all)}`)
-  const names = (t) => t.replace(/\bstar\b/g, '별티켓').replace(/\bmoon\b/g, '달티켓')
-  for (const x of all.reasons) log(`   +${x.points} ${names(x.detail)}`)
+  for (const x of all.reasons) log(`   +${x.points} ${x.detail}`)
 }
 
 export async function runTraffic(kind, log) {
