@@ -7,8 +7,8 @@ vendor:
   qr-secret: star-dev-secret-change-me
   seat-rows: ABCDE
   payment-hold-minutes: 10
-  # 서버 간 요청 서명 키 (D묶음 22번). 실서비스에서는 환경변수로만 넣고 git 에 두지 않는다.
-  # 방향마다 키가 다르다: 이 예매처 → FairTicket / FairTicket → 이 예매처
-  ft-outbound-secret: ${STAR_TO_FAIRTICKET_SECRET:dev-star-to-ft-change-me}
+  # 서버 간 요청 서명 키. 실서비스에서는 환경변수로만 넣고 git 에 두지 않는다.
+  # 방향마다 키가 다르다: 이 예매처 → eTicket / eTicket → 이 예매처
+  ft-outbound-secret: ${STAR_TO_ETICKET_SECRET:dev-star-to-ft-change-me}
   ft-inbound-secrets:
-    - ${FAIRTICKET_TO_STAR_SECRET:dev-ft-to-star-change-me}
+    - ${ETICKET_TO_STAR_SECRET:dev-ft-to-star-change-me}
