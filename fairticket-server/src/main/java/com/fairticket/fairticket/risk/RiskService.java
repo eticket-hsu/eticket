@@ -138,7 +138,7 @@ public class RiskService {
 			.forEach(e -> vendors.add(e.getVendorId()));
 		if (vendors.size() >= 2) {
 			reasons.add(new RiskAssessment.Reason("CROSS_VENDOR", 20,
-					String.join("·", vendors) + "에서 같은 공연 동시 시도"));
+					String.join("·", vendors.stream().map(this::vendorName).toList()) + "에서 같은 공연 동시 시도"));
 		}
 
 		// 5. 한도 초과 시도 반복: 공통 구매 한도에 계속 부딪힘
@@ -191,6 +191,12 @@ public class RiskService {
 			.map(k -> assess(k.uid(), k.performanceCode()))
 			.sorted(Comparator.comparingInt(RiskAssessment::score).reversed())
 			.toList();
+	}
+
+	/** 화면에 보일 예매처 이름 (설정에 없으면 ID 그대로) */
+	private String vendorName(String vendorId) {
+		FairTicketProperties.Vendor v = props.vendors() == null ? null : props.vendors().get(vendorId);
+		return v == null || v.name() == null ? vendorId : v.name();
 	}
 
 	private void addIpReasons(List<PurchaseEvent> recent, List<RiskAssessment.Reason> reasons) {
