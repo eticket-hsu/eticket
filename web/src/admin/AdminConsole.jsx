@@ -543,8 +543,11 @@ function Tools({ failReissue, setFailReissue }) {
               <button className="btn danger" disabled={busy} onClick={() => run('vpn')}>
                 VPN·데이터센터 접속
               </button>
+              <button className="btn danger" disabled={busy} onClick={() => run('split')}>
+                분산 매크로 (사이트별 비교)
+              </button>
               <button className="btn danger" disabled={busy} onClick={() => run('ring')}>
-                분산 매크로 (계정 묶음)
+                계정 묶음 (IP 돌려쓰기)
               </button>
               <button className="btn dark" disabled={busy} onClick={() => run('buy')}>
                 매크로봇 실제 구매 시도
