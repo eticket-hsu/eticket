@@ -5,7 +5,16 @@ import { api } from '../api.js'
 const PERF = 'PERF-001'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const event = (vendorId, uid, result, ip, reactionMs, clientTimezone = 'Asia/Seoul') =>
-  api.post('ft', '/v1/demo/purchase-events', { vendorId, uid, performanceCode: PERF, action: 'PURCHASE', result, ip, reactionMs, clientTimezone })
+  api.post('ft', '/v1/demo/purchase-events', {
+    vendorId,
+    uid,
+    performanceCode: PERF,
+    action: 'PURCHASE',
+    result,
+    ip,
+    reactionMs,
+    clientTimezone,
+  })
 
 async function report(uid, log) {
   const r = await api.get('ft', `/v1/demo/risk?uid=${uid}&performanceCode=${PERF}`)
@@ -15,11 +24,18 @@ async function report(uid, log) {
   if (r.reasons.length === 0) log('   특이 사항 없음')
 }
 
-/** 예매처 한 곳의 기록만으로 판단한 점수와, FairTicket 이 합쳐 판단한 점수를 나란히 보여 준다 */
+/** 예매처 한 곳의 기록만으로 판단한 점수와, eTicket 이 합쳐 판단한 점수를 나란히 보여 준다 */
 async function compare(uid, log) {
-  const one = async (vendorId) => api.get('ft', `/v1/demo/risk?uid=${uid}&performanceCode=${PERF}${vendorId ? `&vendorId=${vendorId}` : ''}`)
+  const one = async (vendorId) =>
+    api.get(
+      'ft',
+      `/v1/demo/risk?uid=${uid}&performanceCode=${PERF}${vendorId ? `&vendorId=${vendorId}` : ''}`,
+    )
   const [star, moon, all] = await Promise.all([one('star'), one('moon'), one(null)])
-  const label = (r) => ({ LOW: '정상 → 그냥 구매', MEDIUM: '주의 → 보안문자', HIGH: '고위험 → 구매 보류' })[r.riskLevel]
+  const label = (r) =>
+    ({ LOW: '정상 → 그냥 구매', MEDIUM: '주의 → 보안문자', HIGH: '고위험 → 구매 보류' })[
+      r.riskLevel
+    ]
   log('')
   log(`별티켓 혼자 볼 때     ${String(star.score).padStart(3)}점  ${label(star)}`)
   log(`달티켓 혼자 볼 때     ${String(moon.score).padStart(3)}점  ${label(moon)}`)
@@ -33,7 +49,9 @@ export async function runTraffic(kind, log) {
     // 0.5초 미만 반응, 1분 20번 초과)을 넘지 않게 두 사이트에 나눠 시도한다
     const uid = `ft-u-split-${Date.now() % 100000}`
     log(`분산 매크로(${uid}): 별티켓·달티켓에 8번씩 번갈아 시도`)
-    log('사이트마다 실패 4번 · 한도 초과 2번까지만, 반응 0.6~0.8초, 간격 불규칙 → 한 사이트 기준은 안 넘게')
+    log(
+      '사이트마다 실패 4번 · 한도 초과 2번까지만, 반응 0.6~0.8초, 간격 불규칙 → 한 사이트 기준은 안 넘게',
+    )
     const order = ['FAIL', 'FAIL', 'SUCCESS', 'FAIL', 'SUCCESS', 'FAIL', 'QUOTA', 'QUOTA']
     const ip = `10.77.${Math.floor(Math.random() * 250) + 1}.${Math.floor(Math.random() * 250) + 1}`
     for (let k = 0; k < 16; k++) {
@@ -44,7 +62,9 @@ export async function runTraffic(kind, log) {
     }
     await compare(uid, log)
     log('')
-    log('→ 각 사이트는 자기 기록만 봐서 정상으로 보지만, 합치면 실패 8번 · 한도 초과 4번 · 두 사이트 동시 시도가 드러납니다')
+    log(
+      '→ 각 사이트는 자기 기록만 봐서 정상으로 보지만, 합치면 실패 8번 · 한도 초과 4번 · 두 사이트 동시 시도가 드러납니다',
+    )
     return
   }
 
@@ -66,7 +86,9 @@ export async function runTraffic(kind, log) {
     return
   }
   if (kind === 'macro') {
-    log('매크로봇: 30회 · 20ms 간격 · 화면 진입 0.12초 만에 요청 · 별티켓/달티켓 번갈아 · 한도 초과 반복')
+    log(
+      '매크로봇: 30회 · 20ms 간격 · 화면 진입 0.12초 만에 요청 · 별티켓/달티켓 번갈아 · 한도 초과 반복',
+    )
     for (let i = 0; i < 30; i++) {
       const v = i % 2 === 0 ? 'star' : 'moon'
       await event(v, 'ft-u-bot', 'ATTEMPT', '203.0.113.7', 120)
@@ -83,7 +105,9 @@ export async function runTraffic(kind, log) {
     await sleep(800)
     await event('moon', 'ft-u-003', 'ATTEMPT', '192.0.2.40', 2300)
     await report('ft-u-003', log)
-    log('→ VPN·데이터센터 IP와 시간대 불일치가 겹쳐 주의 이상. 발행처가 차단 정책을 켜면 바로 보류됩니다')
+    log(
+      '→ VPN·데이터센터 IP와 시간대 불일치가 겹쳐 주의 이상. 발행처가 차단 정책을 켜면 바로 보류됩니다',
+    )
     return
   }
   if (kind === 'ring') {
@@ -91,7 +115,13 @@ export async function runTraffic(kind, log) {
     const ips = ['198.51.100.21', '198.51.100.22']
     for (let i = 0; i < 5; i++) {
       for (let k = 0; k < 4; k++) {
-        await event(k % 2 ? 'moon' : 'star', `ft-u-ring-${i}`, 'ATTEMPT', ips[(i + k) % 2], 150 + k * 10)
+        await event(
+          k % 2 ? 'moon' : 'star',
+          `ft-u-ring-${i}`,
+          'ATTEMPT',
+          ips[(i + k) % 2],
+          150 + k * 10,
+        )
       }
     }
     await report('ft-u-ring-0', log)
@@ -113,7 +143,11 @@ export async function runTraffic(kind, log) {
         const c = await api.get('ft', '/v1/captcha')
         const a = await api.get('ft', `/v1/demo/captcha/${c.id}`)
         log(`   ${vendor === 'star' ? '별티켓' : '달티켓'}이 보안문자 요구 → 풀이 대행으로 통과`)
-        return await api.post(vendor, url, { memberId: bot.id, captchaId: c.id, captchaAnswer: a.answer })
+        return await api.post(vendor, url, {
+          memberId: bot.id,
+          captchaId: c.id,
+          captchaAnswer: a.answer,
+        })
       }
     }
     for (const vendor of ['star', 'moon', 'star', 'moon', 'star']) {
@@ -122,10 +156,14 @@ export async function runTraffic(kind, log) {
         const r = await buyAt(vendor)
         log(`→ ${name} 구매 성공: ${r.ticket.seat}`)
       } catch (e) {
-        log(`→ ${name} 실패: ${e.data?.quotaExceeded ? '공통 구매 한도 초과' : e.data?.held ? '구매 보류(고위험)' : e.message}`)
+        log(
+          `→ ${name} 실패: ${e.data?.quotaExceeded ? '공통 구매 한도 초과' : e.data?.held ? '구매 보류(고위험)' : e.message}`,
+        )
       }
     }
-    log('→ 예매 단계에서는 표 일부를 가져갔습니다. 사후 검토 탭에서 의심 계정으로 찾아 표를 취소해 보세요')
+    log(
+      '→ 예매 단계에서는 표 일부를 가져갔습니다. 사후 검토 탭에서 의심 계정으로 찾아 표를 취소해 보세요',
+    )
     return
   }
   if (kind === 'buy') {
@@ -134,7 +172,9 @@ export async function runTraffic(kind, log) {
     const perf = (await api.get('star', '/api/performances')).find((p) => p.code === PERF)
     log('매크로봇이 별티켓에서 좌석 화면 없이 바로 구매를 시도합니다')
     try {
-      const r = await api.post('star', `/api/performances/${perf.id}/purchase`, { memberId: bot.id })
+      const r = await api.post('star', `/api/performances/${perf.id}/purchase`, {
+        memberId: bot.id,
+      })
       log(`→ 구매 승인됨 (등급 ${r.level}). 먼저 '매크로 공격'을 실행해 보세요`)
     } catch (e) {
       if (e.data?.held) log('→ 별티켓이 구매를 보류했습니다 (고위험: 보안문자 + 본인인증 필요)')

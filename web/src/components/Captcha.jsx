@@ -3,7 +3,7 @@ import { RefreshCw } from 'lucide-react'
 import { api } from '../api.js'
 
 /**
- * FairTicket 공통 보안문자. 이미지를 받아 보여 주고, 입력값을 onChange({ id, answer }) 로 넘긴다.
+ * eTicket 공통 보안문자. 이미지를 받아 보여 주고, 입력값을 onChange({ id, answer }) 로 넘긴다.
  * 답은 서버에서 한 번만 확인할 수 있어서, 틀리면 새 문제를 받아야 한다 (reloadKey 를 바꾸면 새로 받음).
  */
 export default function Captcha({ onChange, reloadKey = 0, autoFocus = true }) {
@@ -32,7 +32,14 @@ export default function Captcha({ onChange, reloadKey = 0, autoFocus = true }) {
     <div>
       <div className="row" style={{ gap: 10 }}>
         <div
-          style={{ width: 180, height: 60, borderRadius: 8, border: '1px solid var(--line)', background: '#eef1f6', flex: 'none' }}
+          style={{
+            width: 180,
+            height: 60,
+            borderRadius: 8,
+            border: '1px solid var(--line)',
+            background: '#eef1f6',
+            flex: 'none',
+          }}
         >
           {challenge && <img src={challenge.image} alt="보안문자" width={180} height={60} />}
         </div>
@@ -54,7 +61,11 @@ export default function Captcha({ onChange, reloadKey = 0, autoFocus = true }) {
           onChange?.({ id: challenge?.id, answer: v })
         }}
       />
-      {error && <p className="tiny" style={{ color: 'var(--bad)', marginTop: 6 }}>{error}</p>}
+      {error && (
+        <p className="tiny" style={{ color: 'var(--bad)', marginTop: 6 }}>
+          {error}
+        </p>
+      )}
     </div>
   )
 }

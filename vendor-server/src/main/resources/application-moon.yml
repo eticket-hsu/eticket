@@ -7,8 +7,8 @@ vendor:
   qr-secret: moon-dev-secret-change-me
   seat-rows: FGHIJ
   payment-hold-minutes: 8
-  # 서버 간 요청 서명 키 (D묶음 22번). 실서비스에서는 환경변수로만 넣고 git 에 두지 않는다.
-  # 방향마다 키가 다르다: 이 예매처 → FairTicket / FairTicket → 이 예매처
-  ft-outbound-secret: ${MOON_TO_FAIRTICKET_SECRET:dev-moon-to-ft-change-me}
+  # 서버 간 요청 서명 키. 실서비스에서는 환경변수로만 넣고 git 에 두지 않는다.
+  # 방향마다 키가 다르다: 이 예매처 → eTicket / eTicket → 이 예매처
+  ft-outbound-secret: ${MOON_TO_ETICKET_SECRET:dev-moon-to-ft-change-me}
   ft-inbound-secrets:
-    - ${FAIRTICKET_TO_MOON_SECRET:dev-ft-to-moon-change-me}
+    - ${ETICKET_TO_MOON_SECRET:dev-ft-to-moon-change-me}

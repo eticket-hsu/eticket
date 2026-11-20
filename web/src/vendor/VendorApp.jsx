@@ -43,15 +43,19 @@ export default function VendorApp({ vendorId }) {
 
   usePolling(loadMembers, 5000)
 
-  usePolling(async () => {
-    if (!meId) return setMyCount(0)
-    try {
-      const ts = await api.get(vendorId, `/api/members/${meId}/tickets`)
-      setMyCount(ts.length)
-    } catch {
-      /* 무시 */
-    }
-  }, 4000, [meId])
+  usePolling(
+    async () => {
+      if (!meId) return setMyCount(0)
+      try {
+        const ts = await api.get(vendorId, `/api/members/${meId}/tickets`)
+        setMyCount(ts.length)
+      } catch {
+        /* 무시 */
+      }
+    },
+    4000,
+    [meId],
+  )
 
   /**
    * 로그인 후 이동 (멜론티켓처럼 들어온 곳 기준):
@@ -73,15 +77,35 @@ export default function VendorApp({ vendorId }) {
     if (from === 'header') navigate(`/${vendorId}`)
   }
 
-  const value = { vendor, vendorId, members, me, login, openLogin: () => setLoginFrom('action'), offline }
+  const value = {
+    vendor,
+    vendorId,
+    members,
+    me,
+    login,
+    openLogin: () => setLoginFrom('action'),
+    offline,
+  }
 
   return (
     <Ctx.Provider value={value}>
-      <div style={{ '--brand': vendor.brand, '--accent': vendor.accent, '--brand-soft': `${vendor.brand}14` }}>
+      <div
+        style={{
+          '--brand': vendor.brand,
+          '--accent': vendor.accent,
+          '--brand-soft': `${vendor.brand}14`,
+        }}
+      >
         <header className="v-header">
           <div className="v-header-inner">
             <Link to={`/${vendorId}`} className="v-logo">
-              <span className="v-logo-mark">{vendorId === 'star' ? <Star size={18} fill="currentColor" /> : <Moon size={18} fill="currentColor" />}</span>
+              <span className="v-logo-mark">
+                {vendorId === 'star' ? (
+                  <Star size={18} fill="currentColor" />
+                ) : (
+                  <Moon size={18} fill="currentColor" />
+                )}
+              </span>
               {vendor.name}
             </Link>
             <nav className="v-nav">
@@ -92,17 +116,23 @@ export default function VendorApp({ vendorId }) {
                 <Repeat size={16} /> 공식 재판매
               </NavLink>
               <NavLink to={`/${vendorId}/my`}>
-                <Ticket size={16} /> 내 티켓 {myCount > 0 && <span className="count">{myCount}</span>}
+                <Ticket size={16} /> 내 티켓{' '}
+                {myCount > 0 && <span className="count">{myCount}</span>}
               </NavLink>
             </nav>
-            <label className={`v-demo-loc ${location !== 'home' ? 'on' : ''}`} title="시연용: 예매 요청이 이 위치의 IP에서 온 것으로 처리됩니다">
+            <label
+              className={`v-demo-loc ${location !== 'home' ? 'on' : ''}`}
+              title="시연용: 예매 요청이 이 위치의 IP에서 온 것으로 처리됩니다"
+            >
               <MapPin size={14} />
               <select
                 value={location}
                 onChange={(e) => {
                   demoLocation.set(e.target.value)
                   setLocation(e.target.value)
-                  toast(`접속 위치: ${DEMO_LOCATIONS.find((l) => l.id === e.target.value).label} (시연용)`)
+                  toast(
+                    `접속 위치: ${DEMO_LOCATIONS.find((l) => l.id === e.target.value).label} (시연용)`,
+                  )
                 }}
                 aria-label="접속 위치 (시연용)"
               >
@@ -126,7 +156,8 @@ export default function VendorApp({ vendorId }) {
         </header>
         {offline && (
           <div className="v-offline">
-            {vendor.name} 서버(포트 {vendor.port})에 연결할 수 없습니다. 서버를 켠 뒤 잠시 기다려 주세요.
+            {vendor.name} 서버(포트 {vendor.port})에 연결할 수 없습니다. 서버를 켠 뒤 잠시 기다려
+            주세요.
           </div>
         )}
         <main className="v-main">

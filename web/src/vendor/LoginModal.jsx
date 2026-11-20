@@ -13,7 +13,11 @@ export default function LoginModal({ onClose }) {
       </p>
       <div className="persona-list">
         {members.map((m) => (
-          <button key={m.id} className={`persona ${me?.id === m.id ? 'on' : ''}`} onClick={() => login(m)}>
+          <button
+            key={m.id}
+            className={`persona ${me?.id === m.id ? 'on' : ''}`}
+            onClick={() => login(m)}
+          >
             <Avatar member={m} size={42} />
             <div className="grow">
               <b>{m.name}</b>

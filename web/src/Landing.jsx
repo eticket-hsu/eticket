@@ -6,14 +6,45 @@ import { usePolling } from './components/ui.jsx'
 import './landing.css'
 
 const APPS = [
-  { to: '/star', name: '별티켓', desc: ['공연 예매 · 내 티켓', '공식 재판매 신청·응모'], icon: Star, color: '#2b50ec', server: 'star' },
-  { to: '/moon', name: '달티켓', desc: ['별티켓과 같은 공연을', '다른 좌석 구역으로 판매'], icon: Moon, color: '#6d3bea', server: 'moon' },
-  { to: '/admin', name: 'eTicket 운영 콘솔', desc: ['재판매 진행 · 위험 신호', '입장 기록 · 시연 도구'], icon: LayoutDashboard, color: '#0f9d8a', server: 'ft' },
-  { to: '/gate', name: '입장 검증', desc: ['공연장 직원용', '카메라로 QR 스캔'], icon: ScanLine, color: '#0b0f14', server: 'ft' },
+  {
+    to: '/star',
+    name: '별티켓',
+    desc: ['공연 예매 · 내 티켓', '공식 재판매 신청·응모'],
+    icon: Star,
+    color: '#2b50ec',
+    server: 'star',
+  },
+  {
+    to: '/moon',
+    name: '달티켓',
+    desc: ['별티켓과 같은 공연을', '다른 좌석 구역으로 판매'],
+    icon: Moon,
+    color: '#6d3bea',
+    server: 'moon',
+  },
+  {
+    to: '/admin',
+    name: 'eTicket 운영 콘솔',
+    desc: ['재판매 진행 · 위험 신호', '입장 기록 · 시연 도구'],
+    icon: LayoutDashboard,
+    color: '#0f9d8a',
+    server: 'ft',
+  },
+  {
+    to: '/gate',
+    name: '입장 검증',
+    desc: ['공연장 직원용', '카메라로 QR 스캔'],
+    icon: ScanLine,
+    color: '#0b0f14',
+    server: 'ft',
+  },
 ]
 
 const SCENARIO = [
-  ['운영 콘솔 → 시연 도구', '‘매크로 공격’ 후 ‘매크로봇 실제 구매 시도’ → 별티켓이 근거와 함께 구매 보류'],
+  [
+    '운영 콘솔 → 시연 도구',
+    '‘매크로 공격’ 후 ‘매크로봇 실제 구매 시도’ → 별티켓이 근거와 함께 구매 보류',
+  ],
   ['별티켓 · 민지', 'NEON WAVE(1인 2매) 좌석 선택 → 예매 → 내 티켓에서 QR 확인'],
   ['달티켓 · 민지', '1매 더 사면 성공(합산 2/2) → 3번째는 어느 예매처든 “공통 구매 한도 초과”'],
   ['별티켓 · 민지', '공식 재판매 신청, 가격은 정가 이하로 직접 입력 → QR이 즉시 사용 정지'],
@@ -38,7 +69,11 @@ export default function Landing() {
         return false
       }
     }
-    const [ft, star, moon] = await Promise.all([check('ft', '/v1/demo/fail-reissue'), check('star', '/api/info'), check('moon', '/api/info')])
+    const [ft, star, moon] = await Promise.all([
+      check('ft', '/v1/demo/fail-reissue'),
+      check('star', '/api/info'),
+      check('moon', '/api/info'),
+    ])
     setUp({ ft, star, moon })
   }, 4000)
 
@@ -53,11 +88,20 @@ export default function Landing() {
           <br />더 안전한 티켓 예매와 유통은 <span>eTicket</span>으로
         </h1>
         <p className="lines">
-          <span>여러 예매처를 연결해 부정구매 위험을 함께 분석하고, 공식 재판매와 입장 검증을 지원합니다.</span>
-          <span>티켓 발급·무효화·재발급 권한은 예매처가 유지하고, eTicket은 절차를 연결합니다.</span>
+          <span>
+            여러 예매처를 연결해 부정구매 위험을 함께 분석하고, 공식 재판매와 입장 검증을
+            지원합니다.
+          </span>
+          <span>
+            티켓 발급·무효화·재발급 권한은 예매처가 유지하고, eTicket은 절차를 연결합니다.
+          </span>
         </p>
         <div className="l-status">
-          {[['ft', 'eTicket 8080'], ['star', '별티켓 8081'], ['moon', '달티켓 8082']].map(([k, label]) => (
+          {[
+            ['ft', 'eTicket 8080'],
+            ['star', '별티켓 8081'],
+            ['moon', '달티켓 8082'],
+          ].map(([k, label]) => (
             <span key={k} className={`l-dot ${up[k] === undefined ? '' : up[k] ? 'on' : 'off'}`}>
               <i /> {label}
             </span>
@@ -78,7 +122,11 @@ export default function Landing() {
               ))}
             </p>
             <div className="row" style={{ marginTop: 'auto' }}>
-              <Link className="btn primary sm" to={a.to} style={{ background: a.color, borderColor: a.color }}>
+              <Link
+                className="btn primary sm"
+                to={a.to}
+                style={{ background: a.color, borderColor: a.color }}
+              >
                 열기
               </Link>
               <a className="btn sm" href={a.to} target="_blank" rel="noreferrer">
@@ -92,7 +140,8 @@ export default function Landing() {
       <section className="l-scenario">
         <h2>시연 순서</h2>
         <p className="small muted" style={{ marginBottom: 16 }}>
-          화면 네 개를 새 창으로 나란히 띄우면 흐름이 잘 보입니다. 서버를 다시 켜면 데이터가 초기화됩니다.
+          화면 네 개를 새 창으로 나란히 띄우면 흐름이 잘 보입니다. 서버를 다시 켜면 데이터가
+          초기화됩니다.
         </p>
         <ol>
           {SCENARIO.map(([where, what], i) => (

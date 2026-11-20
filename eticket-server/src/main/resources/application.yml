@@ -1,0 +1,48 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: eticket-server
+  datasource:
+    url: jdbc:h2:mem:eticket;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  h2:
+    console:
+      enabled: true
+
+eticket:
+  # 연동된 발행처 목록. QR 의 발행처 ID(FT:{id}:...)로 찾는다.
+  vendors:
+    star:
+      name: 별티켓
+      base-url: http://localhost:8081
+      # 서버 간 요청 서명 키. 실서비스에서는 환경변수로만 넣는다.
+      outbound-secret: ${ETICKET_TO_STAR_SECRET:dev-ft-to-star-change-me}
+      inbound-secrets:
+        - ${STAR_TO_ETICKET_SECRET:dev-star-to-ft-change-me}
+    moon:
+      name: 달티켓
+      base-url: http://localhost:8082
+      # 서버 간 요청 서명 키. 실서비스에서는 환경변수로만 넣는다.
+      outbound-secret: ${ETICKET_TO_MOON_SECRET:dev-ft-to-moon-change-me}
+      inbound-secrets:
+        - ${MOON_TO_ETICKET_SECRET:dev-moon-to-ft-change-me}
+  reissue-max-attempts: 3
+  # 시연용 기능(보안문자 정답 조회 등). 실서비스에서는 false
+  demo-mode: true
+  # IP 검사 정책. block-anonymous: true 면 VPN·프록시·데이터센터 IP 예매를 바로 보류 (인터파크식 차단)
+  ip-policy:
+    block-anonymous: false
+  # 발행처가 공연 등록 때 재판매 기한을 보내지 않으면 쓰는 기본값
+  resale-defaults:
+    # 구매자 선정 방식: HYBRID = 공연 lottery-hours-before 시간 전까지 추첨, 그 뒤 선착순 / LOTTERY = 끝까지 추첨
+    selection: HYBRID
+    lottery-hours-before: 24
+    apply-hours-before: 6
+    close-hours-before: 3
+    payment-minutes: 30

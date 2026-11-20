@@ -1,63 +1,331 @@
-/* ============ FairTicket 관리자 콘솔 ============ */
-.adm { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; --brand: #0f9d8a; --brand-soft: #e6f6f3; }
-.adm-side { background: #0f1720; color: #c9d1dc; padding: 22px 14px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
-.adm-logo { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 900; font-size: 18px; padding: 0 10px 22px; letter-spacing: -0.02em; }
-.adm-logo .mk { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg,#14b8a6,#0ea5e9); display: grid; place-items: center; }
-.adm-logo small { display: block; font-size: 11px; font-weight: 600; color: #7d8a9c; }
-.adm-side button { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 0; background: transparent; color: inherit; font: 600 14px var(--font); cursor: pointer; text-align: left; }
-.adm-side button:hover { background: rgba(255,255,255,0.06); color: #fff; }
-.adm-side button.on { background: rgba(20,184,166,0.16); color: #5eead4; }
-.adm-side .cnt { margin-left: auto; font-size: 11px; background: rgba(255,255,255,0.1); padding: 2px 7px; border-radius: 99px; }
-.adm-side .cnt.hot { background: #e5383b; color: #fff; }
-.adm-side .foot { margin-top: auto; font-size: 12px; color: #6b7889; padding: 10px; line-height: 1.6; }
-.adm-main { padding: 28px 32px 60px; min-width: 0; }
-.adm-main h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
-.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 20px 0 24px; }
-.kpi { padding: 18px; }
-.kpi .k { font-size: 13px; color: var(--text-3); display: flex; align-items: center; gap: 6px; }
-.kpi .v { font-size: 30px; font-weight: 900; margin-top: 6px; letter-spacing: -0.02em; }
-.kpi .s { font-size: 12px; color: var(--text-3); margin-top: 2px; }
-.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-.tbl th { text-align: left; font-weight: 600; color: var(--text-3); font-size: 12px; padding: 10px 10px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
-.tbl td { padding: 12px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
-.tbl tr.click { cursor: pointer; }
-.tbl tr.click:hover td { background: var(--surface-2); }
-.tbl tr.sel td { background: var(--brand-soft); }
-.split { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
-.panel-h { padding: 16px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.panel-h h2 { font-size: 16px; font-weight: 800; }
-.tl { list-style: none; margin: 0; padding: 4px 0 0; }
-.tl li { position: relative; padding: 0 0 18px 26px; }
-.tl li::before { content: ''; position: absolute; left: 7px; top: 18px; bottom: 0; width: 2px; background: var(--line); }
-.tl li:last-child::before { display: none; }
-.tl .d { position: absolute; left: 0; top: 3px; width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--brand); background: #fff; }
-.tl .d.bad { border-color: var(--bad); }
-.tl .d.mut { border-color: var(--line-strong); }
-.tl b { font-size: 14px; }
-.tl p { font-size: 13px; color: var(--text-2); margin-top: 2px; }
-.scorebar { width: 90px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
-.scorebar i { display: block; height: 100%; border-radius: 3px; }
-.chip-reason { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; padding: 4px 9px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); margin: 2px 4px 2px 0; }
-.chip-reason b { color: var(--bad); }
-.tool { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-.tool h3 { font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
-.tool p { font-size: 13.5px; color: var(--text-2); line-height: 1.6; }
-.switch { position: relative; width: 46px; height: 26px; border-radius: 99px; background: var(--line-strong); border: 0; cursor: pointer; transition: background 0.15s; flex: none; }
-.switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-.switch.on { background: var(--bad); }
-.switch.on::after { transform: translateX(20px); }
-.log { background: #0f1720; color: #b9f6ca; font: 12px/1.7 ui-monospace, monospace; border-radius: 10px; padding: 12px 14px; max-height: 380px; overflow: auto; white-space: pre-wrap; }
-@media (max-width: 1000px) {
-  .adm { grid-template-columns: 1fr; }
-  .adm-side { position: static; height: auto; flex-direction: row; flex-wrap: wrap; }
-  .adm-side .foot { display: none; }
-  .kpis { grid-template-columns: repeat(2, 1fr); }
-  .split { grid-template-columns: 1fr; }
-  .adm-main { padding: 20px 16px; }
+/* ============ eTicket 관리자 콘솔 ============ */
+.adm {
+  display: grid;
+  grid-template-columns: 232px 1fr;
+  min-height: 100vh;
+  --brand: #0f9d8a;
+  --brand-soft: #e6f6f3;
 }
-.tbl td.mono { white-space: nowrap; }
+.adm-side {
+  background: #0f1720;
+  color: #c9d1dc;
+  padding: 22px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.adm-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  font-weight: 900;
+  font-size: 18px;
+  padding: 0 10px 22px;
+  letter-spacing: -0.02em;
+}
+.adm-logo .mk {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #14b8a6, #0ea5e9);
+  display: grid;
+  place-items: center;
+}
+.adm-logo small {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #7d8a9c;
+}
+.adm-side button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: 600 14px var(--font);
+  cursor: pointer;
+  text-align: left;
+}
+.adm-side button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+.adm-side button.on {
+  background: rgba(20, 184, 166, 0.16);
+  color: #5eead4;
+}
+.adm-side .cnt {
+  margin-left: auto;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 7px;
+  border-radius: 99px;
+}
+.adm-side .cnt.hot {
+  background: #e5383b;
+  color: #fff;
+}
+.adm-side .foot {
+  margin-top: auto;
+  font-size: 12px;
+  color: #6b7889;
+  padding: 10px;
+  line-height: 1.6;
+}
+.adm-main {
+  padding: 28px 32px 60px;
+  min-width: 0;
+}
+.adm-main h1 {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin: 20px 0 24px;
+}
+.kpi {
+  padding: 18px;
+}
+.kpi .k {
+  font-size: 13px;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.kpi .v {
+  font-size: 30px;
+  font-weight: 900;
+  margin-top: 6px;
+  letter-spacing: -0.02em;
+}
+.kpi .s {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.tbl th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-3);
+  font-size: 12px;
+  padding: 10px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.tbl td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.tbl tr.click {
+  cursor: pointer;
+}
+.tbl tr.click:hover td {
+  background: var(--surface-2);
+}
+.tbl tr.sel td {
+  background: var(--brand-soft);
+}
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.panel-h {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.panel-h h2 {
+  font-size: 16px;
+  font-weight: 800;
+}
+.tl {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0 0;
+}
+.tl li {
+  position: relative;
+  padding: 0 0 18px 26px;
+}
+.tl li::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 18px;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+.tl li:last-child::before {
+  display: none;
+}
+.tl .d {
+  position: absolute;
+  left: 0;
+  top: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 3px solid var(--brand);
+  background: #fff;
+}
+.tl .d.bad {
+  border-color: var(--bad);
+}
+.tl .d.mut {
+  border-color: var(--line-strong);
+}
+.tl b {
+  font-size: 14px;
+}
+.tl p {
+  font-size: 13px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+.scorebar {
+  width: 90px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+}
+.scorebar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+}
+.chip-reason {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  margin: 2px 4px 2px 0;
+}
+.chip-reason b {
+  color: var(--bad);
+}
+.tool {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tool h3 {
+  font-size: 16px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tool p {
+  font-size: 13.5px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+.switch {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  border-radius: 99px;
+  background: var(--line-strong);
+  border: 0;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex: none;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+.switch.on {
+  background: var(--bad);
+}
+.switch.on::after {
+  transform: translateX(20px);
+}
+.log {
+  background: #0f1720;
+  color: #b9f6ca;
+  font:
+    12px/1.7 ui-monospace,
+    monospace;
+  border-radius: 10px;
+  padding: 12px 14px;
+  max-height: 380px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+@media (max-width: 1000px) {
+  .adm {
+    grid-template-columns: 1fr;
+  }
+  .adm-side {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .adm-side .foot {
+    display: none;
+  }
+  .kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .split {
+    grid-template-columns: 1fr;
+  }
+  .adm-main {
+    padding: 20px 16px;
+  }
+}
+.tbl td.mono {
+  white-space: nowrap;
+}
 
 /* 시연 도구 설명: 문장마다 한 줄 */
-.tool p.lines { font-size: 13px; }
+.tool p.lines {
+  font-size: 13px;
+}
 /* 표 안의 공연 이름: 한 줄 */
-.tbl .cell-title { display: block; font-size: 13px; white-space: nowrap; }
+.tbl .cell-title {
+  display: block;
+  font-size: 13px;
+  white-space: nowrap;
+}

@@ -9,8 +9,9 @@ build/
 # Node
 node_modules/
 dist/
-# Claude Code 개인 설정
-.claude/settings.local.json
+# 개인 도구 설정
+.claude/
+.codex/
 # 로그
 *.log
 

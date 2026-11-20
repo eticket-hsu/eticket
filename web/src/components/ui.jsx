@@ -84,18 +84,58 @@ export function usePolling(fn, ms = 2500, deps = []) {
 
 /* ---------- 포스터 (공연 코드별 생성 이미지) ---------- */
 const POSTERS = {
-  'PERF-001': { bg: 'linear-gradient(150deg,#0f0c29 0%,#302b63 55%,#ff2e88 130%)', a: '#ff2e88', b: '#22d3ee' },
-  'PERF-002': { bg: 'linear-gradient(160deg,#1e1b4b 0%,#3b2a7a 50%,#f6c453 140%)', a: '#f6c453', b: '#a78bfa' },
-  'PERF-003': { bg: 'linear-gradient(160deg,#04111f 0%,#0c3b5c 60%,#7dd3fc 150%)', a: '#7dd3fc', b: '#1d4ed8' },
-  'PERF-004': { bg: 'linear-gradient(150deg,#ff7a18 0%,#ff3d54 60%,#7a1fa2 130%)', a: '#ffe259', b: '#ff3d54' },
-  'PERF-005': { bg: 'linear-gradient(155deg,#1a2e1a 0%,#2f5d3a 55%,#f4a261 140%)', a: '#f4a261', b: '#a7f3d0' },
+  'PERF-001': {
+    bg: 'linear-gradient(150deg,#0f0c29 0%,#302b63 55%,#ff2e88 130%)',
+    a: '#ff2e88',
+    b: '#22d3ee',
+  },
+  'PERF-002': {
+    bg: 'linear-gradient(160deg,#1e1b4b 0%,#3b2a7a 50%,#f6c453 140%)',
+    a: '#f6c453',
+    b: '#a78bfa',
+  },
+  'PERF-003': {
+    bg: 'linear-gradient(160deg,#04111f 0%,#0c3b5c 60%,#7dd3fc 150%)',
+    a: '#7dd3fc',
+    b: '#1d4ed8',
+  },
+  'PERF-004': {
+    bg: 'linear-gradient(150deg,#ff7a18 0%,#ff3d54 60%,#7a1fa2 130%)',
+    a: '#ffe259',
+    b: '#ff3d54',
+  },
+  'PERF-005': {
+    bg: 'linear-gradient(155deg,#1a2e1a 0%,#2f5d3a 55%,#f4a261 140%)',
+    a: '#f4a261',
+    b: '#a7f3d0',
+  },
 }
 export function Poster({ perf, large }) {
   const p = POSTERS[perf.code ?? perf.performanceCode] ?? POSTERS['PERF-001']
   return (
     <div className={`poster ${large ? 'lg' : ''}`} style={{ background: p.bg }}>
-      <div className="p-shape" style={{ width: '70%', height: '52%', right: '-18%', top: '-8%', background: p.a, opacity: 0.55 }} />
-      <div className="p-shape" style={{ width: '46%', height: '34%', left: '-12%', top: '34%', background: p.b, opacity: 0.45 }} />
+      <div
+        className="p-shape"
+        style={{
+          width: '70%',
+          height: '52%',
+          right: '-18%',
+          top: '-8%',
+          background: p.a,
+          opacity: 0.55,
+        }}
+      />
+      <div
+        className="p-shape"
+        style={{
+          width: '46%',
+          height: '34%',
+          left: '-12%',
+          top: '34%',
+          background: p.b,
+          opacity: 0.45,
+        }}
+      />
       <div className="p-genre">{perf.genre ?? 'LIVE'}</div>
       <div>
         <div className="p-title">{perf.title ?? perf.performanceTitle}</div>
@@ -157,7 +197,13 @@ export function ResaleStepper({ status }) {
         const now = i === idx && status !== 'SETTLED'
         return (
           <div key={s} className={`step ${done ? 'done' : ''} ${now ? 'now' : ''}`}>
-            <div className="dot">{done ? <Check size={12} strokeWidth={3} /> : failed && now ? <X size={12} strokeWidth={3} /> : null}</div>
+            <div className="dot">
+              {done ? (
+                <Check size={12} strokeWidth={3} />
+              ) : failed && now ? (
+                <X size={12} strokeWidth={3} />
+              ) : null}
+            </div>
             {failed && now ? '실패' : label}
           </div>
         )
@@ -167,13 +213,28 @@ export function ResaleStepper({ status }) {
 }
 
 /* ---------- 아바타 ---------- */
-const AVATAR = { 'ft-u-001': '#f97316', 'ft-u-002': '#10b981', 'ft-u-003': '#6366f1', 'ft-u-004': '#0ea5e9', 'ft-u-005': '#e11d48', 'ft-u-bot': '#64748b' }
+const AVATAR = {
+  'ft-u-001': '#f97316',
+  'ft-u-002': '#10b981',
+  'ft-u-003': '#6366f1',
+  'ft-u-004': '#0ea5e9',
+  'ft-u-005': '#e11d48',
+  'ft-u-bot': '#64748b',
+}
 export function Avatar({ member, size = 32 }) {
   return (
     <span
       style={{
-        width: size, height: size, borderRadius: '50%', display: 'inline-grid', placeItems: 'center', flex: 'none',
-        background: AVATAR[member?.ftUid] ?? '#94a3b8', color: '#fff', fontWeight: 800, fontSize: size * 0.42,
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        display: 'inline-grid',
+        placeItems: 'center',
+        flex: 'none',
+        background: AVATAR[member?.ftUid] ?? '#94a3b8',
+        color: '#fff',
+        fontWeight: 800,
+        fontSize: size * 0.42,
       }}
     >
       {member?.name?.[0] ?? '?'}
@@ -182,7 +243,7 @@ export function Avatar({ member, size = 32 }) {
 }
 
 /* ---------- 회원 이름 (관리자 화면용) ----------
- * FairTicket 은 공통 ID(ft-u-…)만 갖고 이름은 모른다. 시연 화면에서 알아보기 쉽게
+ * eTicket 은 공통 ID(ft-u-…)만 갖고 이름은 모른다. 시연 화면에서 알아보기 쉽게
  * 예매처 회원 목록에서 이름을 찾아 "이름 (ID)" 로 보여 준다. 처음 한 번만 불러와 공유한다. */
 let namesCache = null
 let namesLoading = null

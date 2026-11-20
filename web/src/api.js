@@ -1,5 +1,5 @@
 // 백엔드 호출 헬퍼. vite.config.js 의 프록시를 거친다.
-//   ft   → FairTicket 서버 (8080)
+//   ft   → eTicket 서버 (8080)
 //   star → 별티켓 (8081), moon → 달티켓 (8082)
 
 async function request(base, path, options = {}) {

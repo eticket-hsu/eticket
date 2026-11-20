@@ -38,7 +38,12 @@ export default function PerformanceDetail() {
     setFlow({ step: 1 })
     const wait = (ms) => new Promise((r) => setTimeout(r, ms))
     try {
-      const call = api.post(vendorId, `/api/performances/${p.id}/purchase`, { memberId: me.id, seat, timezone: browserTimezone(), ...extra })
+      const call = api.post(vendorId, `/api/performances/${p.id}/purchase`, {
+        memberId: me.id,
+        seat,
+        timezone: browserTimezone(),
+        ...extra,
+      })
       await wait(700)
       setFlow({ step: 2 })
       const [res] = await Promise.all([call, wait(900)])
@@ -49,7 +54,8 @@ export default function PerformanceDetail() {
       await wait(600)
       // 등급별 조치: MEDIUM → 보안문자, HIGH → 보안문자 + 본인인증
       if (e.data?.verifyRequired) setFlow({ step: 'verify', risk: e.data.risk })
-      else if (e.data?.captchaRequired) setFlow({ step: 'captcha', level: e.data.level, wrong: e.data.wrong, risk: e.data.risk })
+      else if (e.data?.captchaRequired)
+        setFlow({ step: 'captcha', level: e.data.level, wrong: e.data.wrong, risk: e.data.risk })
       else setFlow({ step: 3, error: e })
       load()
     }
@@ -82,7 +88,8 @@ export default function PerformanceDetail() {
           </dl>
           <div className="policy">
             <div>
-              <ShieldCheck size={16} /> eTicket 부정구매 공동 대응 적용 공연입니다. 매크로·다중 계정으로 의심되는 구매는 보류될 수 있습니다.
+              <ShieldCheck size={16} /> eTicket 부정구매 공동 대응 적용 공연입니다. 매크로·다중
+              계정으로 의심되는 구매는 보류될 수 있습니다.
             </div>
             {p.resaleAllowed ? (
               <div>
@@ -181,16 +188,40 @@ function PurchaseFlow({ flow, vendorName, onClose, vendorId, onRetry, memberId }
     return <CaptchaStep flow={flow} vendorName={vendorName} onClose={onClose} onRetry={onRetry} />
   }
   if (flow.step === 'verify') {
-    return <VerifyStep flow={flow} vendorName={vendorName} vendorId={vendorId} memberId={memberId} onClose={onClose} onRetry={onRetry} />
+    return (
+      <VerifyStep
+        flow={flow}
+        vendorName={vendorName}
+        vendorId={vendorId}
+        memberId={memberId}
+        onClose={onClose}
+        onRetry={onRetry}
+      />
+    )
   }
 
   if (!done) {
     return (
       <Modal title="예매 진행 중">
         <div className="progress-steps">
-          {['eTicket 위험 신호 확인', '공통 구매 한도 확인 (연동 예매처 합산)', `${vendorName} 승인 및 티켓 발급`].map((t, i) => (
-            <div key={t} className={`ps ${flow.step > i + 1 ? 'done' : flow.step === i + 1 ? 'now' : ''}`}>
-              <span className="ic">{flow.step > i + 1 ? <Check size={15} /> : flow.step === i + 1 ? <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> : i + 1}</span>
+          {[
+            'eTicket 위험 신호 확인',
+            '공통 구매 한도 확인 (연동 예매처 합산)',
+            `${vendorName} 승인 및 티켓 발급`,
+          ].map((t, i) => (
+            <div
+              key={t}
+              className={`ps ${flow.step > i + 1 ? 'done' : flow.step === i + 1 ? 'now' : ''}`}
+            >
+              <span className="ic">
+                {flow.step > i + 1 ? (
+                  <Check size={15} />
+                ) : flow.step === i + 1 ? (
+                  <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                ) : (
+                  i + 1
+                )}
+              </span>
               {t}
             </div>
           ))}
@@ -212,7 +243,8 @@ function PurchaseFlow({ flow, vendorName, onClose, vendorId, onRetry, memberId }
           <p>
             {t.performanceTitle} · {t.seat}
             <br />
-            eTicket 위험 신호: <b>{RISK[risk?.riskLevel]?.label ?? '확인 불가'}</b> → {vendorName} 승인
+            eTicket 위험 신호: <b>{RISK[risk?.riskLevel]?.label ?? '확인 불가'}</b> → {vendorName}{' '}
+            승인
           </p>
         </div>
         <button className="btn primary lg block" onClick={() => navigate(`/${vendorId}/my`)}>
@@ -232,7 +264,13 @@ function PurchaseFlow({ flow, vendorName, onClose, vendorId, onRetry, memberId }
         <div className="big-ic" style={{ background: 'var(--bad-soft)', color: 'var(--bad)' }}>
           {held ? <ShieldAlert size={32} /> : <Info size={32} />}
         </div>
-        <h4>{held ? '구매가 보류되었습니다' : quota ? '공통 구매 한도를 넘었습니다' : '예매할 수 없습니다'}</h4>
+        <h4>
+          {held
+            ? '구매가 보류되었습니다'
+            : quota
+              ? '공통 구매 한도를 넘었습니다'
+              : '예매할 수 없습니다'}
+        </h4>
         <p>
           {held
             ? `${vendorName}가 eTicket 위험 신호를 참고해 이 구매를 보류했습니다.`
@@ -273,8 +311,12 @@ function CaptchaStep({ flow, vendorName, onClose, onRetry }) {
         </div>
       </div>
       <Captcha onChange={setC} />
-      <button className="btn primary lg block" style={{ marginTop: 16 }} disabled={(c.answer ?? '').length !== 5}
-        onClick={() => onRetry({ captchaId: c.id, captchaAnswer: c.answer })}>
+      <button
+        className="btn primary lg block"
+        style={{ marginTop: 16 }}
+        disabled={(c.answer ?? '').length !== 5}
+        onClick={() => onRetry({ captchaId: c.id, captchaAnswer: c.answer })}
+      >
         확인하고 예매하기
       </button>
     </Modal>
@@ -305,7 +347,8 @@ function VerifyStep({ flow, vendorName, vendorId, memberId, onClose, onRetry }) 
   return (
     <Modal title="구매가 보류되었습니다" onClose={onClose}>
       <p className="small text-2" style={{ marginBottom: 12, lineHeight: 1.6 }}>
-        {vendorName}가 eTicket 위험 신호를 참고해 이 구매를 보류했습니다. 부정사용자로 확정한 것은 아니며, 아래 두 가지를 통과하면 이 구매를 진행할 수 있습니다.
+        {vendorName}가 eTicket 위험 신호를 참고해 이 구매를 보류했습니다. 부정사용자로 확정한 것은
+        아니며, 아래 두 가지를 통과하면 이 구매를 진행할 수 있습니다.
       </p>
       {reasons.length > 0 && (
         <div className="reason-box" style={{ marginBottom: 16 }}>
@@ -326,17 +369,35 @@ function VerifyStep({ flow, vendorName, vendorId, memberId, onClose, onRetry }) 
           <b className="small row" style={{ gap: 6, marginBottom: 8 }}>
             <Smartphone size={15} /> 2. 휴대폰 본인인증 (다중 계정 확인)
           </b>
-          <input className="field" inputMode="numeric" maxLength={6} placeholder="인증번호 6자리" value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} />
-          <p className="tiny muted" style={{ marginTop: 6 }}>시연용 모의 인증입니다. 인증번호 123456을 입력하세요.</p>
+          <input
+            className="field"
+            inputMode="numeric"
+            maxLength={6}
+            placeholder="인증번호 6자리"
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+          />
+          <p className="tiny muted" style={{ marginTop: 6 }}>
+            시연용 모의 인증입니다. 인증번호 123456을 입력하세요.
+          </p>
         </div>
       </div>
-      {error && <p className="small" style={{ color: 'var(--bad)', marginTop: 10 }}>{error}</p>}
-      <button className="btn primary lg block" style={{ marginTop: 16 }}
-        disabled={busy || (c.answer ?? '').length !== 5 || code.length !== 6} onClick={submit}>
+      {error && (
+        <p className="small" style={{ color: 'var(--bad)', marginTop: 10 }}>
+          {error}
+        </p>
+      )}
+      <button
+        className="btn primary lg block"
+        style={{ marginTop: 16 }}
+        disabled={busy || (c.answer ?? '').length !== 5 || code.length !== 6}
+        onClick={submit}
+      >
         인증하고 예매하기
       </button>
-      <p className="tiny muted center" style={{ marginTop: 10 }}>인증을 통과해도 위험 분석은 계속됩니다</p>
+      <p className="tiny muted center" style={{ marginTop: 10 }}>
+        인증을 통과해도 위험 분석은 계속됩니다
+      </p>
     </Modal>
   )
 }

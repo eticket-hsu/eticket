@@ -21,7 +21,10 @@ export default function Home() {
     <>
       <section className="v-hero" style={{ background: vendor.hero }}>
         <div className="orb" style={{ width: 340, height: 340, right: -80, top: -120 }} />
-        <div className="orb" style={{ width: 160, height: 160, right: 220, bottom: -90, opacity: 0.12 }} />
+        <div
+          className="orb"
+          style={{ width: 160, height: 160, right: 220, bottom: -90, opacity: 0.12 }}
+        />
         <h1>
           {vendor.tagline}
           <br />
