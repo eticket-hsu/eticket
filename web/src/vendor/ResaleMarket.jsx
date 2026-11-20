@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Info, PartyPopper, Repeat, Check, CreditCard, Users, Zap, Dices } from 'lucide-react'
 import { api } from '../api.js'
-import { Badge, Modal, Poster, RESALE_STATUS, dateLabel, usePolling, useToast, won } from '../components/ui.jsx'
+import {
+  Badge,
+  Modal,
+  Poster,
+  RESALE_STATUS,
+  dateLabel,
+  usePolling,
+  useToast,
+  won,
+} from '../components/ui.jsx'
 import Captcha from '../components/Captcha.jsx'
 import { useVendor } from './VendorApp.jsx'
 
@@ -18,9 +27,13 @@ export default function ResaleMarket() {
 
   const load = async () => {
     try {
-      const all = (await api.get('ft', '/v1/resales')).filter((r) => r.vendorId === vendorId && VISIBLE.includes(r.status))
+      const all = (await api.get('ft', '/v1/resales')).filter(
+        (r) => r.vendorId === vendorId && VISIBLE.includes(r.status),
+      )
       setListings(all)
-      const ds = await Promise.all(all.map((r) => api.get('ft', `/v1/resales/${r.id}`).catch(() => null)))
+      const ds = await Promise.all(
+        all.map((r) => api.get('ft', `/v1/resales/${r.id}`).catch(() => null)),
+      )
       setDetails(Object.fromEntries(ds.filter(Boolean).map((d) => [d.listing.id, d])))
     } catch {
       /* 오프라인 */
@@ -28,7 +41,7 @@ export default function ResaleMarket() {
   }
   usePolling(load, 2500, [me?.id])
 
-  /** 위험 등급 MEDIUM 이면 FairTicket 이 보안문자를 요구한다 (HIGH 는 응모 불가) */
+  /** 위험 등급 MEDIUM 이면 eTicket 이 보안문자를 요구한다 (HIGH 는 응모 불가) */
   async function enter(l, captcha) {
     if (!me) return openLogin()
     try {
@@ -63,16 +76,27 @@ export default function ResaleMarket() {
             <b>정가 이하</b>(판매자가 산 가격을 넘지 않음)로만 판매되고, 수수료는 없습니다.
           </span>
           <span>
-            구매자는 <b>공연 24시간 전까지는 추첨</b>, 그 뒤로는 <b>먼저 결제한 사람</b>으로 정해집니다.
+            구매자는 <b>공연 24시간 전까지는 추첨</b>, 그 뒤로는 <b>먼저 결제한 사람</b>으로
+            정해집니다.
           </span>
           <span>결제가 끝나면 기존 티켓은 무효가 되고 새 티켓이 발급됩니다.</span>
         </div>
       </div>
 
-      {open.length === 0 && <div className="card empty">지금 판매 중인 재판매 티켓이 없습니다.</div>}
+      {open.length === 0 && (
+        <div className="card empty">지금 판매 중인 재판매 티켓이 없습니다.</div>
+      )}
       <div className="resale-grid">
         {open.map((l) => (
-          <ListingCard key={l.id} l={l} d={details[l.id]} me={me} onEnter={() => enter(l)} onBuy={() => buy(l)} onPay={() => setPayOf(l)} />
+          <ListingCard
+            key={l.id}
+            l={l}
+            d={details[l.id]}
+            me={me}
+            onEnter={() => enter(l)}
+            onBuy={() => buy(l)}
+            onPay={() => setPayOf(l)}
+          />
         ))}
       </div>
 
@@ -140,7 +164,8 @@ function ListingCard({ l, d, me, onEnter, onBuy, onPay }) {
             <span className="row" style={{ gap: 6 }}>
               {l.status === 'LISTED' && (
                 <span className={`badge ${firstCome ? 'warn' : 'info'}`}>
-                  {firstCome ? <Zap size={12} /> : <Dices size={12} />} {firstCome ? '선착순' : '추첨'}
+                  {firstCome ? <Zap size={12} /> : <Dices size={12} />}{' '}
+                  {firstCome ? '선착순' : '추첨'}
                 </span>
               )}
               <Badge map={RESALE_STATUS} value={l.status} />
@@ -155,7 +180,9 @@ function ListingCard({ l, d, me, onEnter, onBuy, onPay }) {
       <div className="spread">
         <div className="prices">
           <b>{won(l.price)}</b>
-          <span className="small muted">{l.fee > 0 ? `+ 수수료 ${won(l.fee)}` : '수수료 없음'}</span>
+          <span className="small muted">
+            {l.fee > 0 ? `+ 수수료 ${won(l.fee)}` : '수수료 없음'}
+          </span>
         </div>
         {firstCome && l.status === 'LISTED' ? (
           <span className="small muted">공연 임박 · 먼저 결제한 사람에게</span>
@@ -188,8 +215,16 @@ function ListingCard({ l, d, me, onEnter, onBuy, onPay }) {
           <PartyPopper size={18} /> 당첨! 결제하기
         </button>
       )}
-      {l.status === 'DRAWN' && !won_ && <div className="small muted center">{lost ? '아쉽게도 당첨되지 않았습니다' : '당첨자 결제 대기 중'}</div>}
-      {gotIt && <div className="badge good" style={{ justifyContent: 'center', height: 36 }}>내 티켓으로 재발급되었습니다</div>}
+      {l.status === 'DRAWN' && !won_ && (
+        <div className="small muted center">
+          {lost ? '아쉽게도 당첨되지 않았습니다' : '당첨자 결제 대기 중'}
+        </div>
+      )}
+      {gotIt && (
+        <div className="badge good" style={{ justifyContent: 'center', height: 36 }}>
+          내 티켓으로 재발급되었습니다
+        </div>
+      )}
     </div>
   )
 }
@@ -220,7 +255,10 @@ function PayModal({ listing, onClose, onDone, firstCome, captcha, onCaptcha }) {
   }
 
   return (
-    <Modal title={state === 'ready' ? (firstCome ? '재판매 티켓 바로 구매' : '재판매 티켓 결제') : null} onClose={state === 'busy' ? undefined : onClose}>
+    <Modal
+      title={state === 'ready' ? (firstCome ? '재판매 티켓 바로 구매' : '재판매 티켓 결제') : null}
+      onClose={state === 'busy' ? undefined : onClose}
+    >
       {state === 'ready' && (
         <>
           <div className="policy" style={{ marginBottom: 18 }}>
@@ -234,7 +272,9 @@ function PayModal({ listing, onClose, onDone, firstCome, captcha, onCaptcha }) {
             </div>
             <div className="spread" style={{ width: '100%' }}>
               <span>{firstCome ? '구매 방식' : '결제 기한'}</span>
-              <b>{firstCome ? '선착순 · 먼저 결제한 사람' : `당첨 후 ${listing.paymentMinutes}분`}</b>
+              <b>
+                {firstCome ? '선착순 · 먼저 결제한 사람' : `당첨 후 ${listing.paymentMinutes}분`}
+              </b>
             </div>
             <div className="spread" style={{ width: '100%', fontSize: 16 }}>
               <b>결제 금액</b>
@@ -245,7 +285,8 @@ function PayModal({ listing, onClose, onDone, firstCome, captcha, onCaptcha }) {
             <CreditCard size={18} /> {won(listing.price + listing.fee)} 결제하기
           </button>
           <p className="tiny muted center" style={{ marginTop: 10 }}>
-            시연용 가상 결제 · 결제 후 {vendor.name}가 새 티켓을 발급합니다 · 공통 구매 한도에 포함됩니다
+            시연용 가상 결제 · 결제 후 {vendor.name}가 새 티켓을 발급합니다 · 공통 구매 한도에
+            포함됩니다
           </p>
         </>
       )}
@@ -258,7 +299,10 @@ function PayModal({ listing, onClose, onDone, firstCome, captcha, onCaptcha }) {
       {state === 'done' && (
         <>
           <div className="result-hero">
-            <div className="big-ic" style={{ background: 'var(--good-soft)', color: 'var(--good)' }}>
+            <div
+              className="big-ic"
+              style={{ background: 'var(--good-soft)', color: 'var(--good)' }}
+            >
               <Check size={34} strokeWidth={3} />
             </div>
             <h4>새 티켓이 발급되었습니다</h4>
@@ -309,7 +353,12 @@ function EntryCaptcha({ wrong, buy, onClose, onSubmit }) {
           : `최근 구매 활동이 '주의' 단계로 분석되어 ${buy ? '구매' : '응모'} 전에 보안문자를 확인합니다.`}
       </p>
       <Captcha onChange={setC} reloadKey={key} />
-      <button className="btn primary lg block" style={{ marginTop: 16 }} disabled={(c.answer ?? '').length !== 5} onClick={() => onSubmit(c)}>
+      <button
+        className="btn primary lg block"
+        style={{ marginTop: 16 }}
+        disabled={(c.answer ?? '').length !== 5}
+        onClick={() => onSubmit(c)}
+      >
         {buy ? '확인하고 구매하기' : '확인하고 응모하기'}
       </button>
     </Modal>

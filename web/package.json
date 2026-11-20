@@ -1,5 +1,5 @@
 {
-  "name": "fairticket-web",
+  "name": "eticket-web",
   "private": true,
   "version": "0.0.1",
   "type": "module",
@@ -7,7 +7,9 @@
     "dev": "vite",
     "dev:lan": "vite --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "format": "prettier --write --ignore-path ../.prettierignore . ../tests ../simulator ../docs ../README.md ../.github ../.prettierrc.json",
+    "format:check": "prettier --check --ignore-path ../.prettierignore . ../tests ../simulator ../docs ../README.md ../.github ../.prettierrc.json"
   },
   "dependencies": {
     "html5-qrcode": "2.3.8",
@@ -19,6 +21,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "4.5.2",
+    "prettier": "3.6.2",
     "vite": "6.3.5"
   }
 }
