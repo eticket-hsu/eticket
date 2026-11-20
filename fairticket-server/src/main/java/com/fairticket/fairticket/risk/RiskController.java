@@ -52,11 +52,23 @@ public class RiskController {
 		return save(req.vendorId(), req);
 	}
 
-	/** 시연 도구용 위험 조회. 실서비스에서는 예매처만 서명해서 조회한다 */
+	/**
+	 * 시연 도구용 위험 조회. 실서비스에서는 예매처만 서명해서 조회한다.
+	 * vendorId 를 주면 그 예매처 기록만으로 판단한다 (비교 실험: FairTicket 없이 예매처 혼자 볼 때)
+	 */
 	@GetMapping("/demo/risk")
-	public RiskAssessment demoRisk(@RequestParam String uid, @RequestParam String performanceCode) {
+	public RiskAssessment demoRisk(@RequestParam String uid, @RequestParam String performanceCode,
+			@RequestParam(required = false) String vendorId) {
 		requireDemo();
-		return riskService.assess(uid, performanceCode);
+		return riskService.assess(uid, performanceCode, vendorId);
+	}
+
+	/** 비교 실험용 사후 검토: vendorId 를 주면 그 예매처 기록만으로 검토한다 */
+	@GetMapping("/demo/review")
+	public ReviewService.Review demoReview(@RequestParam String performanceCode,
+			@RequestParam(required = false) String vendorId) {
+		requireDemo();
+		return reviewService.review(performanceCode, vendorId);
 	}
 
 	private void requireDemo() {

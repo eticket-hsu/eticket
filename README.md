@@ -64,10 +64,22 @@ H2 콘솔: `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:fairticket`
 
 > 카메라 스캔은 `localhost` 에서만 바로 동작한다. 휴대폰으로 스캔하려면 HTTPS 가 필요하므로, 시연은 노트북 카메라에 휴대폰 화면의 QR 을 비추는 방식을 권장한다.
 
+**영상 촬영 (휴대폰 티켓 → 노트북 입장 검증)**
+
+1. 화면 서버를 같은 와이파이에 열어 둔다: `cd web && npm run dev:lan` (평소 `npm run dev` 대신). 터미널에 나오는 `Network: http://192.168.x.x:5173` 주소를 확인
+2. 휴대폰 브라우저로 그 주소의 `/star` 를 열고 로그인 → 예매 (표는 산 기기에 묶이므로 휴대폰에서 사야 휴대폰에 QR 이 뜸)
+3. 노트북에서 `http://localhost:5173/gate` → "카메라 켜기" → 휴대폰 QR 을 노트북 카메라에 비춤
+4. 노트북 화면 녹화(맥 `Cmd+Shift+5`, 윈도우 OBS)에 카메라 미리보기와 승인/거절 화면이 함께 담긴다
+
+- 노트북에서 산 표를 휴대폰에서 열면 "다른 기기"가 뜬다 → 본인인증(123456)으로 옮기는 장면도 찍을 수 있다 (공연 24시간 전부터는 옮기기 불가)
+- 카메라 없이 찍을 때는 내 티켓의 QR 을 눌러 "QR 내용 복사" → 입장 검증의 "QR 내용 직접 입력"에 붙여 넣는다
+- 윈도우는 처음 `dev:lan` 을 켤 때 방화벽 허용 창이 뜨면 "개인 네트워크" 허용
+
 ## 데모 시나리오 (시연 영상 대본)
 
 1. 운영 콘솔 → 시연 도구: "PC방 (공용 IP)" → 정상(오탐 없음), "매크로 공격" → 위험 신호 탭에 고위험과 근거. 별티켓에서 **매크로봇**으로 예매하면 보류 → 보안문자 + 본인인증(시연용 123456) 후에만 진행
-1-1. "분산 매크로 (계정 묶음)" → 운영 콘솔 "사후 검토" 탭에 여러 예매처에 걸친 계정 5개 묶음 → "발행처에 전달"
+1-1. "분산 매크로 (사이트별 비교)" → 별티켓 혼자 0점, 달티켓 혼자 0점, FairTicket 합쳐서 60점(보안문자)을 한 화면에 비교 (비교 실험의 핵심 장면)
+1-2. "계정 묶음 (IP 돌려쓰기)" → 운영 콘솔 "사후 검토" 탭에 여러 예매처에 걸친 계정 5개 묶음 → "발행처에 전달"
 2. 별티켓에서 **민지**로 로그인 → NEON WAVE(1인 2매) 좌석 선택 → 예매 → 내 티켓에서 QR 확인
 3. **공통 구매 한도:** 달티켓에서 민지로 1매 더 사면 성공(합산 2/2), 어느 예매처에서든 3번째는 "공통 구매 한도를 넘었습니다" → 운영 콘솔 "공통 구매 한도" 탭에 기록
 4. 민지 티켓에서 "공식 재판매 신청" → 가격을 정가보다 낮게(예: 80,000원) 입력 → QR 이 즉시 사용 정지 (입장 검증에서도 "재판매 진행 중" 거절)
@@ -103,6 +115,27 @@ tests/e2e/run.sh auth       # 하나만
 
 윈도우는 `tests\e2e\run.cmd` (하나만: `tests\e2e\run.cmd auth`).
 
+## 비교 실험 (예매처마다 따로 vs FairTicket 합쳐서)
+
+가짜 사용자 110명(정상 90 + 매크로 20)의 예매 기록을 보내고, **같은 위험 규칙**으로 "그 예매처 기록만 보고" 한 번, "두 예매처 기록을 합쳐서" 한 번 판단해 비교한다. 예매처가 하듯 예매 요청마다 위험 등급을 묻고, 끝나면 사후 검토도 두 방식으로 돌린다.
+
+```
+node simulator/experiment.mjs --seed 1    # 1회 약 1분. FairTicket 서버를 새로 띄운 뒤 실행
+node simulator/experiment.mjs --report    # simulator/out/ 에 쌓인 결과를 모아 표로
+```
+
+| 집단 | 인원 | 특징 |
+| --- | --- | --- |
+| 일반 | 55 | 1~3번 시도, 10명은 두 사이트 모두 들어가 봄 |
+| PC방 손님 | 15 | 5명씩 같은 IP |
+| 손 빠른 사람 | 10 | 0.38~0.9초 만에 누름, 3명은 두 사이트 모두 |
+| VPN·해외 | 10 | 한국에서 VPN 5명, 해외 거주 5명 |
+| 단순 매크로 | 6 | 한 사이트에서 250ms 마다 25번 |
+| 분산 매크로 | 8 | 두 사이트에 나눠서, 사이트마다의 기준을 넘지 않게 |
+| 작업장 | 6 | 한 PC로 계정 6개, 사람처럼 천천히 |
+
+판단 근거만 다르게 하려고 FairTicket 에 "그 예매처 기록만 보기" 옵션(`/v1/demo/risk?vendorId=`, `/v1/demo/review?vendorId=`, 시연 모드 전용)을 두었다.
+
 ## 주요 API
 
 | 서버 | 경로 | 용도 |
@@ -114,7 +147,7 @@ tests/e2e/run.sh auth       # 하나만
 | FairTicket | `POST /v1/resales/{id}/draw` · `/forfeit` · `/pay` | 추첨, 차순위 이전, 결제→재발급→정산 |
 | FairTicket | `DELETE /v1/resales/{id}` | 판매 전 취소 |
 | FairTicket | `POST /v1/purchase-events`, `GET /v1/risk`, `GET /v1/risk/overview` | 위험 분석 (실시간) |
-| FairTicket | `POST /v1/demo/purchase-events`, `GET /v1/demo/risk` | 시연 도구·시뮬레이터용 (시연 모드에서만 열림) |
+| FairTicket | `POST /v1/demo/purchase-events`, `GET /v1/demo/risk`, `GET /v1/demo/review` | 시연 도구·시뮬레이터·비교 실험용 (시연 모드에서만 열림). `vendorId` 를 주면 그 예매처 기록만으로 판단 |
 | FairTicket | `GET /v1/risk/review?performanceCode=`, `POST /v1/risk/review/reports` | 사후 검토·계정 묶음, 발행처 전달 |
 | FairTicket | `POST /v1/risk/review/cancel`, `GET /v1/risk/review/cancellations` | 의심 계정 표 취소 요청(발행처가 취소) · 취소 기록 |
 | FairTicket | `GET /v1/captcha`, `POST /v1/captcha/verify` | 예매처에 제공하는 공통 보안문자 (1회용) |

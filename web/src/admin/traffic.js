@@ -15,7 +15,40 @@ async function report(uid, log) {
   if (r.reasons.length === 0) log('   특이 사항 없음')
 }
 
+/** 예매처 한 곳의 기록만으로 판단한 점수와, FairTicket 이 합쳐 판단한 점수를 나란히 보여 준다 */
+async function compare(uid, log) {
+  const one = async (vendorId) => api.get('ft', `/v1/demo/risk?uid=${uid}&performanceCode=${PERF}${vendorId ? `&vendorId=${vendorId}` : ''}`)
+  const [star, moon, all] = await Promise.all([one('star'), one('moon'), one(null)])
+  const label = (r) => ({ LOW: '정상 → 그냥 구매', MEDIUM: '주의 → 보안문자', HIGH: '고위험 → 구매 보류' })[r.riskLevel]
+  log('')
+  log(`별티켓 혼자 볼 때     ${String(star.score).padStart(3)}점  ${label(star)}`)
+  log(`달티켓 혼자 볼 때     ${String(moon.score).padStart(3)}점  ${label(moon)}`)
+  log(`FairTicket 합쳐 볼 때 ${String(all.score).padStart(3)}점  ${label(all)}`)
+  const names = (t) => t.replace(/\bstar\b/g, '별티켓').replace(/\bmoon\b/g, '달티켓')
+  for (const x of all.reasons) log(`   +${x.points} ${names(x.detail)}`)
+}
+
 export async function runTraffic(kind, log) {
+  if (kind === 'split') {
+    // 비교 실험의 "분산 매크로"와 같은 패턴: 사이트마다의 기준(실패 5번 초과, 한도 초과 3번 이상,
+    // 0.5초 미만 반응, 1분 20번 초과)을 넘지 않게 두 사이트에 나눠 시도한다
+    const uid = `ft-u-split-${Date.now() % 100000}`
+    log(`분산 매크로(${uid}): 별티켓·달티켓에 8번씩 번갈아 시도`)
+    log('사이트마다 실패 4번 · 한도 초과 2번까지만, 반응 0.6~0.8초, 간격 불규칙 → 한 사이트 기준은 안 넘게')
+    const order = ['FAIL', 'FAIL', 'SUCCESS', 'FAIL', 'SUCCESS', 'FAIL', 'QUOTA', 'QUOTA']
+    const ip = `10.77.${Math.floor(Math.random() * 250) + 1}.${Math.floor(Math.random() * 250) + 1}`
+    for (let k = 0; k < 16; k++) {
+      const v = k % 2 === 0 ? 'star' : 'moon'
+      await event(v, uid, 'ATTEMPT', ip, 600 + Math.floor(Math.random() * 200))
+      await event(v, uid, order[Math.floor(k / 2)], ip)
+      await sleep(150 + Math.floor(Math.random() * 350))
+    }
+    await compare(uid, log)
+    log('')
+    log('→ 각 사이트는 자기 기록만 봐서 정상으로 보지만, 합치면 실패 8번 · 한도 초과 4번 · 두 사이트 동시 시도가 드러납니다')
+    return
+  }
+
   if (kind === 'normal') {
     log('정상 사용자 서연: 좌석을 보고 3초 뒤 예매, 몇 초 간격으로 2회')
     await event('star', 'ft-u-003', 'ATTEMPT', '10.0.0.3', 3200)
@@ -55,7 +88,7 @@ export async function runTraffic(kind, log) {
     return
   }
   if (kind === 'ring') {
-    log('분산 매크로(계정 묶음): 가짜 계정 5개가 IP 2개를 돌려 쓰며 별티켓·달티켓에 나눠 시도')
+    log('계정 묶음: 가짜 계정 5개가 IP 2개를 돌려 쓰며 별티켓·달티켓에 나눠 시도')
     const ips = ['198.51.100.21', '198.51.100.22']
     for (let i = 0; i < 5; i++) {
       for (let k = 0; k < 4; k++) {
