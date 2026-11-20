@@ -23,7 +23,7 @@ export default function GateApp() {
   const resultTimer = useRef(null)
 
   useEffect(() => {
-    document.title = 'FairTicket 입장 검증'
+    document.title = 'eTicket 입장 검증'
     return () => {
       stopCamera()
       clearTimeout(resultTimer.current)
@@ -96,7 +96,7 @@ export default function GateApp() {
           <span className="mk">
             <Activity size={16} color="#fff" />
           </span>
-          FairTicket 입장 검증
+          eTicket 입장 검증
         </div>
         <label className="row small" style={{ color: '#8a97a8' }}>
           게이트

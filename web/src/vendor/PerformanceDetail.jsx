@@ -73,7 +73,7 @@ export default function PerformanceDetail() {
             <dd>{won(p.price)}</dd>
             <dt>구매 한도</dt>
             <dd>
-              1인 {p.perUserLimit}매 <span className="muted small">(FairTicket 연동 예매처 합산)</span>
+              1인 {p.perUserLimit}매 <span className="muted small">(eTicket 연동 예매처 합산)</span>
             </dd>
             <dt>판매 구역</dt>
             <dd>
@@ -82,7 +82,7 @@ export default function PerformanceDetail() {
           </dl>
           <div className="policy">
             <div>
-              <ShieldCheck size={16} /> FairTicket 부정구매 공동 대응 적용 공연입니다. 매크로·다중 계정으로 의심되는 구매는 보류될 수 있습니다.
+              <ShieldCheck size={16} /> eTicket 부정구매 공동 대응 적용 공연입니다. 매크로·다중 계정으로 의심되는 구매는 보류될 수 있습니다.
             </div>
             {p.resaleAllowed ? (
               <div>
@@ -188,7 +188,7 @@ function PurchaseFlow({ flow, vendorName, onClose, vendorId, onRetry, memberId }
     return (
       <Modal title="예매 진행 중">
         <div className="progress-steps">
-          {['FairTicket 위험 신호 확인', '공통 구매 한도 확인 (연동 예매처 합산)', `${vendorName} 승인 및 티켓 발급`].map((t, i) => (
+          {['eTicket 위험 신호 확인', '공통 구매 한도 확인 (연동 예매처 합산)', `${vendorName} 승인 및 티켓 발급`].map((t, i) => (
             <div key={t} className={`ps ${flow.step > i + 1 ? 'done' : flow.step === i + 1 ? 'now' : ''}`}>
               <span className="ic">{flow.step > i + 1 ? <Check size={15} /> : flow.step === i + 1 ? <div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> : i + 1}</span>
               {t}
@@ -212,7 +212,7 @@ function PurchaseFlow({ flow, vendorName, onClose, vendorId, onRetry, memberId }
           <p>
             {t.performanceTitle} · {t.seat}
             <br />
-            FairTicket 위험 신호: <b>{RISK[risk?.riskLevel]?.label ?? '확인 불가'}</b> → {vendorName} 승인
+            eTicket 위험 신호: <b>{RISK[risk?.riskLevel]?.label ?? '확인 불가'}</b> → {vendorName} 승인
           </p>
         </div>
         <button className="btn primary lg block" onClick={() => navigate(`/${vendorId}/my`)}>
@@ -235,9 +235,9 @@ function PurchaseFlow({ flow, vendorName, onClose, vendorId, onRetry, memberId }
         <h4>{held ? '구매가 보류되었습니다' : quota ? '공통 구매 한도를 넘었습니다' : '예매할 수 없습니다'}</h4>
         <p>
           {held
-            ? `${vendorName}가 FairTicket 위험 신호를 참고해 이 구매를 보류했습니다.`
+            ? `${vendorName}가 eTicket 위험 신호를 참고해 이 구매를 보류했습니다.`
             : quota
-              ? `이 공연은 1인 ${e.data.limit}매까지이며, FairTicket에 연동된 모든 예매처의 구매를 합산합니다. 현재 ${e.data.used}매를 보유 중입니다.`
+              ? `이 공연은 1인 ${e.data.limit}매까지이며, eTicket에 연동된 모든 예매처의 구매를 합산합니다. 현재 ${e.data.used}매를 보유 중입니다.`
               : e.message}
         </p>
       </div>
@@ -269,7 +269,7 @@ function CaptchaStep({ flow, vendorName, onClose, onRetry }) {
         <div className="small">
           {flow.wrong
             ? '입력한 보안문자가 맞지 않습니다. 새 문제로 다시 입력해 주세요.'
-            : `FairTicket이 이 구매 시도를 '주의' 단계로 판단해 ${vendorName}가 보안문자를 요청합니다. 매크로가 아니라면 바로 통과할 수 있습니다.`}
+            : `eTicket이 이 구매 시도를 '주의' 단계로 판단해 ${vendorName}가 보안문자를 요청합니다. 매크로가 아니라면 바로 통과할 수 있습니다.`}
         </div>
       </div>
       <Captcha onChange={setC} />
@@ -305,7 +305,7 @@ function VerifyStep({ flow, vendorName, vendorId, memberId, onClose, onRetry }) 
   return (
     <Modal title="구매가 보류되었습니다" onClose={onClose}>
       <p className="small text-2" style={{ marginBottom: 12, lineHeight: 1.6 }}>
-        {vendorName}가 FairTicket 위험 신호를 참고해 이 구매를 보류했습니다. 부정사용자로 확정한 것은 아니며, 아래 두 가지를 통과하면 이 구매를 진행할 수 있습니다.
+        {vendorName}가 eTicket 위험 신호를 참고해 이 구매를 보류했습니다. 부정사용자로 확정한 것은 아니며, 아래 두 가지를 통과하면 이 구매를 진행할 수 있습니다.
       </p>
       {reasons.length > 0 && (
         <div className="reason-box" style={{ marginBottom: 16 }}>
