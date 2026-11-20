@@ -2,7 +2,7 @@
 // 실행: node simulator/simulate.mjs   (서버 3개가 켜져 있어야 함)
 //
 // 매크로봇(ft-u-bot)은 별티켓·달티켓에 동시에, 일정한 간격으로, 여러 계정과 같은 IP로 요청한다.
-// → FairTicket 위험 분석이 HIGH 와 근거를 내고, 예매처가 구매를 보류하는 것을 보여준다.
+// → eTicket 위험 분석이 HIGH 와 근거를 내고, 예매처가 구매를 보류하는 것을 보여준다.
 
 const FT = process.env.FT_URL ?? 'http://localhost:8080'
 const VENDOR = { star: 'http://localhost:8081', moon: 'http://localhost:8082' }
@@ -13,7 +13,15 @@ async function event(vendorId, uid, result, ip, reactionMs) {
   const res = await fetch(`${FT}/v1/demo/purchase-events`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ vendorId, uid, performanceCode: PERF, action: 'PURCHASE', result, ip, reactionMs }),
+    body: JSON.stringify({
+      vendorId,
+      uid,
+      performanceCode: PERF,
+      action: 'PURCHASE',
+      result,
+      ip,
+      reactionMs,
+    }),
   })
   if (!res.ok) throw new Error(`이벤트 전송 실패: ${res.status}`)
 }
@@ -61,6 +69,7 @@ await macroBot()
 for (const uid of ['ft-u-003', 'ft-u-bot']) {
   const r = await risk(uid)
   console.log(`\n[${uid}] ${r.riskLevel} (${r.score}점)`)
-  for (const reason of r.reasons) console.log(`  +${reason.points} ${reason.rule}: ${reason.detail}`)
+  for (const reason of r.reasons)
+    console.log(`  +${reason.points} ${reason.rule}: ${reason.detail}`)
 }
 await botTriesToBuy()
