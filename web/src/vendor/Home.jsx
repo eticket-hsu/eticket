@@ -28,12 +28,12 @@ export default function Home() {
           {vendor.name}에서 안전하게 예매하세요
         </h1>
         <p className="lines">
-          <span>{vendor.name}은 FairTicket과 연동되어 매크로·다중 계정 구매를 함께 막습니다.</span>
+          <span>{vendor.name}은 eTicket과 연동되어 매크로·다중 계정 구매를 함께 막습니다.</span>
           <span>못 가게 된 티켓은 공식 재판매로 정가 이하에 넘길 수 있습니다.</span>
         </p>
         <div className="chips">
           <span className="chip">
-            <ShieldCheck size={15} /> FairTicket 부정구매 공동 대응
+            <ShieldCheck size={15} /> eTicket 부정구매 공동 대응
           </span>
           <span className="chip">
             <Repeat size={15} /> 정가 이하 공식 재판매

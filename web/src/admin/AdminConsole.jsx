@@ -23,7 +23,7 @@ export default function AdminConsole() {
   const [selected, setSelected] = useState(null)
 
   useEffect(() => {
-    document.title = 'FairTicket 관리자'
+    document.title = 'eTicket 관리자'
   }, [])
 
   usePolling(async () => {
@@ -68,7 +68,7 @@ export default function AdminConsole() {
             <Activity size={18} color="#fff" />
           </span>
           <div>
-            FairTicket
+            eTicket
             <small>운영 콘솔</small>
           </div>
         </div>
@@ -83,12 +83,12 @@ export default function AdminConsole() {
           <br />
           별티켓 · 달티켓
           <br />
-          FairTicket은 티켓과 대금을 보유하지 않습니다.
+          eTicket은 티켓과 대금을 보유하지 않습니다.
         </div>
       </aside>
 
       <main className="adm-main">
-        {offline && <div className="toast bad" style={{ position: 'static', marginBottom: 16, maxWidth: 'none' }}>FairTicket 서버(8080)에 연결할 수 없습니다</div>}
+        {offline && <div className="toast bad" style={{ position: 'static', marginBottom: 16, maxWidth: 'none' }}>eTicket 서버(8080)에 연결할 수 없습니다</div>}
 
         {tab === 'dash' && (
           <>
@@ -145,7 +145,7 @@ export default function AdminConsole() {
           <>
             <h1>입장 검증 기록</h1>
             <p className="small muted" style={{ margin: '6px 0 20px' }}>
-              입장 판단 기준은 발행처의 최신 기록입니다. FairTicket은 요청을 해당 발행처로 연결하고 결과를 남깁니다.
+              입장 판단 기준은 발행처의 최신 기록입니다. eTicket은 요청을 해당 발행처로 연결하고 결과를 남깁니다.
             </p>
             <VerifyTable logs={logs} />
           </>
@@ -526,7 +526,7 @@ function Tools({ failReissue, setFailReissue }) {
               <Zap size={18} /> 구매 트래픽 만들기
             </h3>
             <p className="lines">
-              <span>정해진 패턴의 구매 시도를 FairTicket에 보냅니다.</span>
+              <span>정해진 패턴의 구매 시도를 eTicket에 보냅니다.</span>
               <span>결과는 위험 신호·사후 검토 탭에서 확인합니다.</span>
               <span>등급별 조치: 정상 허용 · 주의 보안문자 · 고위험 보류(보안문자 + 본인인증)</span>
             </p>
@@ -579,7 +579,7 @@ function Tools({ failReissue, setFailReissue }) {
           </div>
           <p className="lines">
             <span>켜면 다음 재발급 1회의 응답이 네트워크에서 사라집니다.</span>
-            <span>FairTicket은 같은 멱등키로 다시 요청하고,</span>
+            <span>eTicket은 같은 멱등키로 다시 요청하고,</span>
             <span>발행처는 다시 처리하지 않고 저장된 결과를 돌려줍니다.</span>
             <span>재판매 진행 기록에서 중복 발급이 없는지 확인하세요.</span>
           </p>

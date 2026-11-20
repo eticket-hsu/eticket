@@ -346,7 +346,7 @@ function ResaleRequestModal({ ticket, onClose, onDone }) {
   }
 
   const rules = [
-    ['구매자 선정', 'FairTicket 추첨. 판매자가 구매자를 지정할 수 없습니다'],
+    ['구매자 선정', 'eTicket 추첨. 판매자가 구매자를 지정할 수 없습니다'],
     ['수수료', '없음. 판매 금액 전액이 정산됩니다'],
     ['정산', '새 구매자에게 재발급이 끝난 뒤 정산됩니다'],
     ['신청 즉시', '이 티켓의 QR은 사용이 정지됩니다'],
@@ -402,7 +402,7 @@ function ResaleRequestModal({ ticket, onClose, onDone }) {
         ))}
       </div>
       <p className="tiny muted" style={{ marginBottom: 14, display: 'flex', gap: 6 }}>
-        <ShieldCheck size={14} /> 발급·무효화·재발급 권한은 {vendor.name}가 유지하고, FairTicket은 절차를 연결합니다.
+        <ShieldCheck size={14} /> 발급·무효화·재발급 권한은 {vendor.name}가 유지하고, eTicket은 절차를 연결합니다.
       </p>
       <button className="btn primary lg block" disabled={busy || !valid} onClick={submit}>
         {busy ? `${vendor.name} 승인 요청 중…` : `${valid ? won(price) : ''}에 재판매 신청하기`}

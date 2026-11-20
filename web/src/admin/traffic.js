@@ -23,7 +23,7 @@ async function compare(uid, log) {
   log('')
   log(`별티켓 혼자 볼 때     ${String(star.score).padStart(3)}점  ${label(star)}`)
   log(`달티켓 혼자 볼 때     ${String(moon.score).padStart(3)}점  ${label(moon)}`)
-  log(`FairTicket 합쳐 볼 때 ${String(all.score).padStart(3)}점  ${label(all)}`)
+  log(`eTicket 합쳐 볼 때    ${String(all.score).padStart(3)}점  ${label(all)}`)
   for (const x of all.reasons) log(`   +${x.points} ${x.detail}`)
 }
 

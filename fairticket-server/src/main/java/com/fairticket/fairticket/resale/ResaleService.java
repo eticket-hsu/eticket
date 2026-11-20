@@ -371,7 +371,7 @@ public class ResaleService {
 						l.getWinnerUid(), l.getPrice(), key(l, "reissue"));
 				if (loseReissueResponse.compareAndSet(true, false)) {
 					history.save(new ResaleHistory(l.getId(), ResaleStatus.PAID, ResaleStatus.PAID,
-							"재발급 응답 유실 (시연): 발행처는 처리했지만 FairTicket 이 응답을 받지 못함"));
+							"재발급 응답 유실 (시연): 발행처는 처리했지만 eTicket 이 응답을 받지 못함"));
 					throw new IllegalStateException("시연용 응답 유실");
 				}
 				if (r.replayed()) {

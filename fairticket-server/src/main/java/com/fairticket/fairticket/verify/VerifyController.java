@@ -50,7 +50,7 @@ public class VerifyController {
 		Matcher m = QR.matcher(req.qr().trim());
 		if (!m.matches()) {
 			logs.save(new VerifyLog(null, null, "MALFORMED", gate));
-			return Map.of("admitted", false, "result", "MALFORMED", "message", "FairTicket QR 형식이 아닙니다");
+			return Map.of("admitted", false, "result", "MALFORMED", "message", "eTicket QR 형식이 아닙니다");
 		}
 		String vendorId = m.group(2);
 		if (!vendors.isKnown(vendorId)) {

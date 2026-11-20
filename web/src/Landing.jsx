@@ -8,7 +8,7 @@ import './landing.css'
 const APPS = [
   { to: '/star', name: '별티켓', desc: ['공연 예매 · 내 티켓', '공식 재판매 신청·응모'], icon: Star, color: '#2b50ec', server: 'star' },
   { to: '/moon', name: '달티켓', desc: ['별티켓과 같은 공연을', '다른 좌석 구역으로 판매'], icon: Moon, color: '#6d3bea', server: 'moon' },
-  { to: '/admin', name: 'FairTicket 운영 콘솔', desc: ['재판매 진행 · 위험 신호', '입장 기록 · 시연 도구'], icon: LayoutDashboard, color: '#0f9d8a', server: 'ft' },
+  { to: '/admin', name: 'eTicket 운영 콘솔', desc: ['재판매 진행 · 위험 신호', '입장 기록 · 시연 도구'], icon: LayoutDashboard, color: '#0f9d8a', server: 'ft' },
   { to: '/gate', name: '입장 검증', desc: ['공연장 직원용', '카메라로 QR 스캔'], icon: ScanLine, color: '#0b0f14', server: 'ft' },
 ]
 
@@ -27,7 +27,7 @@ const SCENARIO = [
 export default function Landing() {
   const [up, setUp] = useState({})
   useEffect(() => {
-    document.title = 'FairTicket 시연'
+    document.title = 'eTicket 시연'
   }, [])
   usePolling(async () => {
     const check = async (base, path) => {
@@ -50,14 +50,14 @@ export default function Landing() {
         </div>
         <h1>
           기존 예매처는 그대로,
-          <br />더 안전한 티켓 예매와 유통은 <span>FairTicket</span>으로
+          <br />더 안전한 티켓 예매와 유통은 <span>eTicket</span>으로
         </h1>
         <p className="lines">
           <span>여러 예매처를 연결해 부정구매 위험을 함께 분석하고, 공식 재판매와 입장 검증을 지원합니다.</span>
-          <span>티켓 발급·무효화·재발급 권한은 예매처가 유지하고, FairTicket은 절차를 연결합니다.</span>
+          <span>티켓 발급·무효화·재발급 권한은 예매처가 유지하고, eTicket은 절차를 연결합니다.</span>
         </p>
         <div className="l-status">
-          {[['ft', 'FairTicket 8080'], ['star', '별티켓 8081'], ['moon', '달티켓 8082']].map(([k, label]) => (
+          {[['ft', 'eTicket 8080'], ['star', '별티켓 8081'], ['moon', '달티켓 8082']].map(([k, label]) => (
             <span key={k} className={`l-dot ${up[k] === undefined ? '' : up[k] ? 'on' : 'off'}`}>
               <i /> {label}
             </span>
