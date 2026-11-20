@@ -16,3 +16,6 @@ dist/
 
 # Vite 캐시
 .vite/
+
+# 비교 실험 결과 (simulator/experiment.mjs)
+simulator/out/
